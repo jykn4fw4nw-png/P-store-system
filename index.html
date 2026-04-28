@@ -1649,11 +1649,29 @@
         function confirmClearAll() { showAlert("⚠️ 注意：這將清空所有資料！", () => { records = []; pInventory = {}; mInventory = {}; excludedWatch = new Set(); isInventoryLoaded = false; updateLabel('p'); updateLabel('m'); renderTables(); save(); localStorage.clear(); }); }
         
         function exportExcel() {
-            const deliveryItems = records.filter(r => r.type === 'delivery');
-            if (deliveryItems.length === 0) return showAlert("❌ 出貨清單是空的");
-            const ws = XLSX.utils.json_to_sheet(deliveryItems.map(r => ({ "Item Code": r.id, "Qty": r.qty })));
-            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "P倉出貨");
-            XLSX.writeFile(wb, `P倉出貨_${new Date().toLocaleDateString()}.xlsx`);
+    const deliveryItems = records.filter(r => r.type === 'delivery');
+    if (deliveryItems.length === 0) return showAlert("❌ 出貨清單是空的");
+
+    // 1. 準備藥物數據（只有 Item Code 和 Qty）
+    const rows = deliveryItems.map(r => [r.id, r.qty]);
+
+    // 2. 建立工作表，標題放在第 2 行（Excel 的 A2, B2），數據從第 3 行開始
+    const ws = XLSX.utils.aoa_to_sheet([
+        [], // 第一行留空給日期
+        ["Item Code", "Qty"] // 第二行是標題
+    ]);
+
+    // 3. 將藥物數據加入到標題下方（從 A3 開始）
+    XLSX.utils.sheet_add_aoa(ws, rows, { origin: "A3" });
+
+    // 4. 在 C1 儲存格放入日期
+    const dateStr = new Date().toLocaleDateString();
+    ws["C1"] = { t: "s", v: dateStr };
+
+    // 5. 匯出檔案
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "P倉出貨");
+    XLSX.writeFile(wb, `P倉出貨_${dateStr.replace(/\//g, '-')}.xlsx`);
         }
     </script>
 </body>
