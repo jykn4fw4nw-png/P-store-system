@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-
+ 
 如有BUG請通知MIKE
 <head>
     <meta charset="UTF-8">
@@ -15,6 +15,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        /* 觀察清單收納動畫 */
+#watchBody {
+    transition: max-height 0.3s ease-out, opacity 0.2s ease-in;
+    max-height: 2000px; /* 給予足夠大的高度以容納列表 */
+    overflow: hidden;
+}
+#watchBody.collapsed {
+    max-height: 0;
+    opacity: 0;
+}
         /* 基礎優化：防止選取文字，模擬原生 APP 感 */
         * { 
             -webkit-tap-highlight-color: transparent; 
@@ -29,7 +39,7 @@
             height: 100%;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            padding-top: env(safe-area-inset-top);
+            padding-top: calc(env(safe-area-inset-top) + 5vh);
             padding-bottom: env(safe-area-inset-bottom);
         }
         
@@ -112,23 +122,43 @@
     </div>
 
     <div id="numKeypad" oncontextmenu="return false;">
-        <div class="flex justify-between items-center mb-3 px-2">
-            <div id="keypadDisplay" class="text-2xl font-black text-blue-600 bg-white px-4 py-2 rounded-xl flex-1 mr-2 shadow-inner text-right min-h-[52px] flex items-center justify-end border border-gray-200">0</div>
-            <button onclick="closeKeypad()" class="bg-gray-400 text-white px-4 py-3 rounded-xl font-bold active:bg-gray-500">關閉</button>
-        </div>
-        <div class="grid grid-cols-4 gap-2">
-            <button class="key-btn" onclick="pressKey('7')">7</button><button class="key-btn" onclick="pressKey('8')">8</button><button class="key-btn" onclick="pressKey('9')">9</button><button class="key-btn key-op" onclick="pressKey('+')">+</button>
-            <button class="key-btn" onclick="pressKey('4')">4</button><button class="key-btn" onclick="pressKey('5')">5</button><button class="key-btn" onclick="pressKey('6')">6</button><button class="key-btn key-op" onclick="pressKey('*')">×</button>
-            <button class="key-btn" onclick="pressKey('1')">1</button><button class="key-btn" onclick="pressKey('2')">2</button><button class="key-btn" onclick="pressKey('3')">3</button><button class="key-btn key-clear" onclick="pressKey('C')">C</button>
-            <button class="key-btn" onclick="pressKey('0')">0</button><button class="key-btn" onclick="pressKey('.')">.</button><button class="key-btn" onclick="pressKey('Backspace')">⌫</button><button class="key-btn key-confirm" onclick="confirmKeypad()">確定</button>
-        </div>
+    <div class="flex justify-between items-center mb-3 px-2">
+        <div id="psHint" class="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded-lg font-bold absolute -top-8 left-2 hidden"></div>
+        
+        <div id="keypadDisplay" class="text-2xl font-black text-blue-600 bg-white px-4 py-2 rounded-xl flex-1 mr-2 shadow-inner text-right min-h-[52px] flex items-center justify-end border border-gray-200">0</div>
+        <button onclick="closeKeypad()" class="bg-gray-400 text-white px-4 py-3 rounded-xl font-bold active:bg-gray-500">關閉</button>
     </div>
+    
+    <div class="grid grid-cols-4 gap-2">
+        <button class="key-btn" onclick="pressKey('7')">7</button>
+        <button class="key-btn" onclick="pressKey('8')">8</button>
+        <button class="key-btn" onclick="pressKey('9')">9</button>
+        <button class="key-btn key-op" onclick="pressKey('+')">+</button>
+        
+        <button class="key-btn" onclick="pressKey('4')">4</button>
+        <button class="key-btn" onclick="pressKey('5')">5</button>
+        <button class="key-btn" onclick="pressKey('6')">6</button>
+        <button class="key-btn key-op" onclick="pressKey('*')">×</button>
+        
+        <button class="key-btn" onclick="pressKey('1')">1</button>
+        <button class="key-btn" onclick="pressKey('2')">2</button>
+        <button class="key-btn" onclick="pressKey('3')">3</button>
+        <button class="key-btn key-clear" onclick="pressKey('C')">C</button>
+        
+        <button id="psBtn" class="key-btn bg-blue-500 text-white font-bold opacity-30 pointer-events-none" onclick="usePackSize()">PS</button>
+        <button class="key-btn" onclick="pressKey('0')">0</button>
+        <button class="key-btn" onclick="pressKey('00')">00</button>
+        <button class="key-btn" onclick="pressKey('Backspace')">⌫</button>
+        
+        <button class="key-btn key-confirm col-span-4" onclick="confirmKeypad()">確定</button>
+    </div>
+</div>
 
     <div class="max-w-md mx-auto">
         <div class="mb-4 bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
             <div onclick="toggleMgmt()" class="flex justify-between items-center cursor-pointer">
                 <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">📊 系統管理</h3>
-                <span id="mgmtIcon" class="text-gray-400 text-[12px] font-bold transition-transform duration-300">▼</span>
+                <span id="mgmtIcon" class="text-gray-400 text-[20px] font-bold transition-transform duration-300">▼</span>
             </div>
             
             <div id="mgmtBody" class="collapsed mt-3">
@@ -148,19 +178,37 @@
                     <div class="grid grid-cols-2 gap-2">
                         <button onclick="exportExcel()" class="bg-green-700 text-white py-3 rounded-xl font-bold text-xs active:bg-green-800">📊 匯出 Excel</button>
                         <button onclick="confirmClearAll()" class="bg-red-50 text-red-500 border border-red-200 py-3 rounded-xl font-bold text-xs active:bg-red-100">🗑️ 全清空</button>
+                        <button onclick="confirmClearDelivery()" class="bg-orange-50 text-orange-600 border border-orange-200 py-3 rounded-xl font-bold text-xs active:bg-orange-100">🧹 清空出貨</button>
+                        <button onclick="confirmClearPending()" class="bg-yellow-50 text-yellow-700 border border-yellow-200 py-3 rounded-xl font-bold text-xs active:bg-yellow-100">⏳ 清空待查</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="flex gap-1 mb-3 bg-[#f4f7f6] py-2 no-scrollbar overflow-x-auto">
-            <button onclick="setCat('L2PM')" id="tab-L2PM" class="flex-1 min-w-[70px] py-3.5 text-xs font-bold rounded-xl bg-gray-200 text-gray-400 transition-all tab-active-L2PM">📦 L2PM</button>
-            <button onclick="setCat('C')" id="tab-C" class="flex-1 min-w-[70px] py-3.5 text-xs font-bold rounded-xl bg-gray-200 text-gray-400 transition-all">❄️雪貨</button>
-            <button onclick="setCat('SFI')" id="tab-SFI" class="flex-1 min-w-[70px] py-3.5 text-xs font-bold rounded-xl bg-gray-200 text-gray-400 transition-all">💰 SFI</button>
+            <div class="flex gap-2 mb-3 bg-[#f4f7f6] py-2 w-full">
+<div id="tab-L2PM" class="flex-1 py-3 text-[11px] font-black rounded-xl bg-gray-200 text-gray-400 text-center transition-all shadow-sm">📦 L2PM</div>
+<div id="tab-C" class="flex-1 py-3 text-[11px] font-black rounded-xl bg-gray-200 text-gray-400 text-center transition-all shadow-sm">❄️ 雪貨</div>
+<div id="tab-SFI" class="flex-1 py-3 text-[11px] font-black rounded-xl bg-gray-200 text-gray-400 text-center transition-all shadow-sm">💰 SFI</div>
+</div>
         </div>
 
         <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
-            <input type="text" id="drugId" oninput="handleIdInput()" placeholder="輸入 Item Code" class="w-full p-3 mb-3 border-2 border-gray-100 rounded-xl text-xl focus:border-blue-400 outline-none uppercase font-black text-center">
+    <div class="relative flex items-center mb-3">
+        <input type="text" id="drugId" oninput="handleIdInput()" 
+               placeholder="輸入 Item Code" 
+               class="w-full p-3 border-2 border-gray-100 rounded-xl text-xl focus:border-blue-400 outline-none uppercase font-black text-center">
+        
+        <button onclick="clearItemCode()" 
+                id="clearIdBtn"
+                type="button"
+                class="absolute right-3 p-2 text-gray-400 hover:text-gray-600 hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+            
             
             <div id="drugInfoBox" class="p-3 rounded-2xl mb-4 transition-all bg-gray-50 border-t-4 border-gray-200 shadow-inner min-h-[120px] flex items-center justify-center overflow-hidden">
                 <div id="drugInfoContent" class="w-full flex flex-col items-center justify-center">
@@ -179,6 +227,38 @@
         </div>
 
         <div id="listsContainer">
+<div class="bg-red-50 rounded-2xl shadow-sm overflow-hidden mb-5 border border-red-200">
+    <div class="p-3 bg-red-600 text-white font-bold">
+        <div class="flex items-center gap-2 text-xs mb-2">
+            🚨 觀察清單 
+            <span id="count-watch" class="ml-auto bg-white text-red-600 px-2.5 py-0.5 rounded-full text-[10px]">0</span>
+        </div>
+        <div class="flex flex-col gap-2 bg-red-700/40 p-2 rounded-xl">
+            <div class="flex gap-1 items-center">
+                <span class="text-[9px] text-red-100 px-1 shrink-0">比例:</span>
+                <button onclick="setThreshold(0.1)" id="btn-t-0.1" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">0.1</button>
+                <button onclick="setThreshold(0.4)" id="btn-t-0.4" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">0.4</button>
+                <button onclick="setThreshold(0.5)" id="btn-t-0.5" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">0.5</button>
+                <button onclick="setThreshold(0.7)" id="btn-t-0.7" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">0.7</button>
+            </div>
+            <div class="flex gap-1 items-center">
+                <span class="text-[9px] text-red-100 px-1 shrink-0">類別:</span>
+                <button onclick="setThreshold('ALL_C')" id="btn-t-ALL_C" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">全部雪貨</button>
+                <button onclick="setThreshold('ALL_SFI')" id="btn-t-ALL_SFI" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">全部 SFI</button>
+            </div>
+        </div>
+    </div>
+
+<table class="w-full text-left border-collapse table-fixed" id="table-watch">
+        <tbody class="divide-y divide-red-100 text-[12px]"></tbody>
+    </table>
+
+    <div id="watch-expand-container" class="hidden p-2 text-center border-t border-red-100 bg-white">
+        <button onclick="toggleWatchlist()" class="text-[10px] font-bold text-red-600 py-2 px-6 border border-red-200 rounded-full active:bg-red-50">
+            <span id="watch-expand-text">展開全部 ▽</span>
+        </button>
+    </div>
+</div>
             <div class="bg-white rounded-2xl shadow-sm overflow-hidden mb-5 border border-gray-100">
                 <div class="p-3 bg-gray-800 text-white font-bold flex items-center gap-2 text-xs">📋 出貨清單 <span id="count-delivery" class="ml-auto bg-white text-gray-800 px-2.5 py-0.5 rounded-full text-[10px]">0</span></div>
                 <table class="w-full text-left border-collapse table-fixed" id="table-delivery"><tbody class="divide-y divide-gray-50 text-[12px]"></tbody></table>
@@ -190,31 +270,13 @@
                 <table class="w-full text-left border-collapse table-fixed" id="table-pending"><tbody class="divide-y divide-yellow-100 text-[12px]"></tbody></table>
                 <div id="pending-expand-btn" class="hidden p-2 text-center border-t border-yellow-100"><button onclick="toggleExpand('pending')" id="btn-expand-pending" class="text-[10px] font-bold text-yellow-600 py-1.5 px-5 border border-yellow-300 rounded-full">展開全部 ▽</button></div>
             </div>
-
-            <div class="bg-red-50 rounded-2xl shadow-sm overflow-hidden mb-5 border border-red-200">
-                <div class="p-3 bg-red-600 text-white font-bold">
-                    <div class="flex items-center gap-2 text-xs mb-2">🚨 觀察清單 <span id="count-watch" class="ml-auto bg-white text-red-600 px-2.5 py-0.5 rounded-full text-[10px]">0</span></div>
-                    <div class="flex flex-col gap-2 bg-red-700/40 p-2 rounded-xl">
-                        <div class="flex gap-1 items-center">
-                            <span class="text-[9px] text-red-100 px-1 shrink-0">比例:</span>
-                            <button onclick="setThreshold(0.1)" id="btn-t-0.1" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">0.1</button>
-                            <button onclick="setThreshold(0.4)" id="btn-t-0.4" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">0.4</button>
-                            <button onclick="setThreshold(0.5)" id="btn-t-0.5" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">0.5</button>
-                            <button onclick="setThreshold(0.7)" id="btn-t-0.7" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">0.7</button>
-                        </div>
-                        <div class="flex gap-1 items-center">
-                            <span class="text-[9px] text-red-100 px-1 shrink-0">類別:</span>
-                            <button onclick="setThreshold('ALL_C')" id="btn-t-ALL_C" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">全部雪貨</button>
-                            <button onclick="setThreshold('ALL_SFI')" id="btn-t-ALL_SFI" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">全部 SFI</button>
-                        </div>
-                    </div>
-                </div>
-                <table class="w-full text-left border-collapse table-fixed" id="table-watch"><tbody class="divide-y divide-red-100 text-[12px]"></tbody></table>
-            </div>
         </div>
     </div>
+    
 
     <script>
+        let currentPS = 0; // 儲存當前藥物的包裝數
+        let isWatchlistExpanded = false;
         // 資料與變數保持一致
         const drugMaster = {
             "C": { 
@@ -1403,10 +1465,48 @@
         }
 
         function cleanId(id) { return id ? id.toString().replace(/\s+/g, '').toUpperCase() : ""; }
-        function save() { 
-            const dataToSave = { records, pInventory, mInventory, watchThreshold, isInventoryLoaded, excludedWatch: Array.from(excludedWatch), ts: Date.now() };
-            localStorage.setItem('p_store_stable_v3', JSON.stringify(dataToSave)); 
-        }
+       // 修改 save 函數，並在網頁載入時啟動「防誤刪」監聽
+function save() {
+    const data = {
+        records,
+        pInventory,
+        mInventory,
+        excludedWatch: Array.from(excludedWatch),
+        isInventoryLoaded
+    };
+    localStorage.setItem('pWarehouseData', JSON.stringify(data));
+    
+    // 💡 自動保存提示：如果是重要變動，可以在 Console 記錄
+    console.log("Data auto-saved at " + new Date().toLocaleTimeString());
+}
+
+// 💡 新增：防止手機瀏覽器意外重新整理或關閉導致資料遺失
+window.onbeforeunload = function(e) {
+    if (records.length > 0) {
+        // 當清單有資料時，嘗試關閉分頁會跳出系統警告
+        e.preventDefault();
+        e.returnValue = '';
+    }
+};
+
+// 💡 修改：初始化載入資料（確保資料能正確還原）
+window.onload = function() {
+    const saved = localStorage.getItem('pWarehouseData');
+    if (saved) {
+        const d = JSON.parse(saved);
+        records = d.records || [];
+        pInventory = d.pInventory || {};
+        mInventory = d.mInventory || {};
+        excludedWatch = new Set(d.excludedWatch || []);
+        isInventoryLoaded = d.isInventoryLoaded || false;
+        
+        updateLabel('p');
+        updateLabel('m');
+        renderTables();
+    }
+    // 初始狀態不亮燈
+    setCat(null); 
+};
 
         window.onload = function() {
             const saved = localStorage.getItem('p_store_stable_v3');
@@ -1428,20 +1528,71 @@
         };
 
         // --- 彈窗控制 ---
-        function openKeypad(target) {
-            keypadTarget = target;
-            let currentVal = "";
-            if(target === 'main') currentVal = document.getElementById('qty').value;
-            else if (typeof target === 'string' && target.startsWith('watch-qty-')) currentVal = document.getElementById(target).value;
-            else { const r = records.find(i => i.ts === target); if(r) currentVal = r.qty.toString(); }
-            
-            keypadString = (currentVal === "" || currentVal === "0") ? "0" : currentVal.toString();
-            updateKeypadDisplay();
-            
-            document.getElementById('overlay').style.display = 'block';
-            setTimeout(() => document.getElementById('numKeypad').classList.add('show'), 10);
-        }
+function openKeypad(target) {
+    keypadTarget = target;
+    let currentVal = "";
+    if(target === 'main') currentVal = document.getElementById('qty').value;
+    else if (typeof target === 'string' && target.startsWith('watch-qty-')) currentVal = document.getElementById(target).value;
+    else { const r = records.find(i => i.ts === target); if(r) currentVal = r.qty.toString(); }
+    
+    keypadString = (currentVal === "" || currentVal === "0") ? "0" : currentVal.toString();
+    updateKeypadDisplay();
 
+    // --- 💡 救活 PS 鍵的重點區域 ---
+    const idVal = document.getElementById('drugId').value;
+    const matched = getDrugInfo(idVal);
+    const psBtn = document.getElementById('psBtn');
+    const psHint = document.getElementById('psHint');
+
+    // 嘗試從不同地方抓取 PS (假設在 info 的第 4 格)
+    let foundPS = 0;
+    if (matched) {
+        foundPS = matched.ps || (matched.info && matched.info[3]) || 0;
+    }
+
+    if (foundPS > 0) {
+        currentPS = foundPS; // 更新全域變數
+        if(psBtn) {
+            psBtn.style.opacity = "1";
+            psBtn.style.pointerEvents = "auto";
+            psBtn.classList.remove('opacity-30', 'pointer-events-none'); // 雙重保險
+        }
+        if(psHint) {
+            psHint.innerText = `包裝: ${currentPS}`;
+            psHint.classList.remove('hidden');
+        }
+    } else {
+        currentPS = 0;
+        if(psBtn) {
+            psBtn.style.opacity = "0.3";
+            psBtn.style.pointerEvents = "none";
+        }
+        if(psHint) psHint.classList.add('hidden');
+    }
+    // ----------------------------
+    
+    document.getElementById('overlay').style.display = 'block';
+    setTimeout(() => document.getElementById('numKeypad').classList.add('show'), 10);
+}
+function getDrugInfo(id) {
+    if (!id) return null;
+    const clean = cleanId(id);
+    
+    // 假設你在 pInventory 或 mInventory 裡面搵藥
+    let row = pInventory[clean] || mInventory[clean];
+    
+    if (row) {
+        // --- 這裡就是你要修改的地方 ---
+        return {
+            originalId: id,
+            cat: (pInventory[clean] ? 'L2PM' : (row[4] === 'SFI' ? 'SFI' : 'C')), 
+            info: row, 
+            ps: row[3] // <--- 確保這行有加進去，假設 Excel 第 4 欄是 Pack Size
+        };
+        // ----------------------------
+    }
+    return null;
+}
         function closeKeypad() {
             document.getElementById('numKeypad').classList.remove('show');
             setTimeout(() => {
@@ -1474,7 +1625,16 @@
                 setTimeout(() => { keypadString = "0"; updateKeypadDisplay(); }, 800);
             }
         }
-
+function usePackSize() {
+    if (currentPS > 0) {
+        // 將計算機目前的字串直接設為包裝數
+        keypadString = currentPS.toString();
+        updateKeypadDisplay();
+        
+        // 💡 如果你希望點完 PS 鍵直接「確定」並關閉鍵盤，可以解除下面這行的註解：
+        // confirmKeypad();
+    }
+}
         function closeAllModals() { closeAlert(); closeKeypad(); }
 
         // --- 渲染渲染渲染 ---
@@ -1494,6 +1654,43 @@
                         else { if (c === 'L2PM' && monthly > 0 && (onHand / monthly) <= watchThreshold) show = true; }
                         if (show) watchList.push({ id, cat: c, name: info[0], locator: info[1], monthly, onHand, ratio: (onHand/monthly).toFixed(2) });
                     }
+function renderTables() {
+    // ... 前面原本計算數據的 code 唔好郁佢 ...
+
+    // 找到處理 table-watch 的地方開始貼上：
+const watchBody = document.querySelector('#table-watch tbody');
+            const countWatch = document.getElementById('count-watch');
+            if (countWatch) countWatch.innerText = watchlistItems.length;
+
+            // 根據展開狀態決定截取數量
+            const displayWatch = isWatchlistExpanded ? watchlistItems : watchlistItems.slice(0, 10);
+
+            watchBody.innerHTML = displayWatch.map(item => {
+                const ratio = (parseInt(item.pStock) || 0) / (parseInt(item.mStock) || 1);
+                return `
+                <tr class="border-b border-red-100 active:bg-red-100" onclick="handleWatchClick('${item.id}')">
+                    <td class="p-2 w-2/3">
+                        <div class="font-bold text-red-900 text-sm">${item.id}</div>
+                        <div class="text-[10px] text-red-600 truncate">${item.name}</div>
+                        <div class="mt-1"><span class="watch-locator-badge">${item.loc}</span></div>
+                    </td>
+                    <td class="p-2 w-1/3 text-right">
+                        <div class="text-[10px] text-gray-400">P:${item.pStock} / M:${item.mStock}</div>
+                        <div class="font-black text-red-600 text-sm">${ratio.toFixed(2)}</div>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            // 更新觀察清單展開按鈕
+            const watchExpandCont = document.getElementById('watch-expand-container');
+            const watchExpandText = document.getElementById('watch-expand-text');
+            if (watchlistItems.length > 10) {
+                watchExpandCont.classList.remove('hidden');
+                watchExpandText.innerText = isWatchlistExpanded ? "收起清單 △" : `展開全部 (${watchlistItems.length}) ▽`;
+            } else {
+                watchExpandCont.classList.add('hidden');
+            }
+}
                 }
             }
             
@@ -1519,10 +1716,38 @@
                         const cid = cleanId(r.id), pS = pInventory[cid] ?? (isInventoryLoaded ? 0 : '--'), mS = mInventory[cid] ?? (isInventoryLoaded ? 0 : '--');
                         const usage = r.usage || (r.monthly) || '0', isS = isInventoryLoaded && parseFloat(r.qty) > parseFloat(mS);
                         
-                        if (t === 'watch') {
-                            const ratioTag = `<span class="bg-red-100 text-red-600 px-1 rounded font-bold ml-1 text-[9px]">${r.ratio}x</span>`;
-                            return `<tr class="bg-white/40"><td class="p-2 text-center w-8">${catIcons[r.cat]}</td><td class="p-2"><div class="font-bold leading-tight text-gray-800 mb-1 text-[12px]">${r.name}</div><div class="flex flex-col gap-1"><div class="flex items-center gap-1"><span class="item-code-badge">${r.id}</span><span class="watch-locator-badge">📍 ${r.locator}</span></div><div class="flex flex-wrap items-center gap-2"><span class="text-[9px] font-bold text-blue-700">📊 ${usage}</span><span class="text-[9px] font-bold text-emerald-600">🗑️ ${pS}</span><span class="text-[9px] font-bold text-purple-600">🏥 ${mS}</span>${ratioTag}${isS ? '<span class="text-red-600 font-black text-[9px]">!缺</span>' : ''}</div></div></td><td class="p-2 text-right w-36"><div class="flex gap-1 justify-end items-center"><input type="text" id="watch-qty-${cid}" readonly onclick="openKeypad('watch-qty-${cid}')" class="w-10 h-7 text-center font-bold bg-white border border-red-200 rounded text-[10px] outline-none"><button onclick="addEntry('delivery','${r.id}', document.getElementById('watch-qty-${cid}').value)" class="bg-red-600 text-white px-2 h-7 rounded text-[9px] font-bold">出貨</button><button onclick="delWatch('${r.id}')" class="text-gray-300 ml-1"><i class="icon-trash"></i></button></div></td></tr>`;
-                        }
+                     if (t === 'watch') {
+    const ratioTag = `<span class="bg-red-100 text-red-600 px-1 rounded font-bold ml-1 text-[9px]">${r.ratio}x</span>`;
+    return `<tr class="bg-white/40">
+        <td class="p-2 text-center w-8">${catIcons[r.cat]}</td>
+        <td class="p-2">
+            <div class="font-bold leading-tight text-gray-800 mb-1 text-[12px]">${r.name}</div>
+            <div class="flex flex-col gap-1">
+                <div class="flex items-center gap-1">
+                    <span class="item-code-badge">${r.id}</span>
+                    <span class="watch-locator-badge">📍 ${r.locator}</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-[9px] font-bold text-blue-700">📊 ${usage}</span>
+                    <span class="text-[9px] font-bold text-emerald-600">🗑️ ${pS}</span>
+                    <span class="text-[9px] font-bold text-purple-600">🏥 ${mS}</span>
+                    ${ratioTag}${isS ? '<span class="text-red-600 font-black text-[9px]">!缺</span>' : ''}
+                </div>
+            </div>
+        </td>
+        <td class="p-2 text-right w-44"> <div class="flex gap-1 justify-end items-center">
+                
+                <input type="text" id="watch-qty-${cid}" readonly onclick="openKeypad('watch-qty-${cid}')" placeholder="0" class="w-10 h-7 text-center font-bold bg-white border border-red-200 rounded text-[10px] outline-none">
+                
+                <button onclick="addEntry('delivery','${r.id}', document.getElementById('watch-qty-${cid}').value)" class="bg-red-500 text-white px-2 h-7 rounded text-[9px] font-bold active:bg-red-300">出貨</button>
+                
+                <button onclick="delWatch('${r.id}')" class="text-gray-500 ml-1"><i class="icon-trash"></i></button>
+                
+                <button onclick="addEntry('pending','${r.id}', 0)" class="bg-yellow-500 text-white px-2 h-7 rounded text-[9px] font-bold active:bg-yellow-600">⏳ </button>
+            </div>
+        </td>
+    </tr>`;
+}
                         return `<tr><td class="p-2 text-center w-8">${catIcons[r.cat]}</td><td class="p-2"><div class="font-bold text-[12px] leading-tight text-gray-800 mb-1">${r.name}</div><div class="flex items-center gap-2"><span class="item-code-badge">${r.id}</span><div class="flex flex-wrap gap-2 text-[8px] font-bold"><span class="text-blue-500">📍 ${r.locator}</span><span class="text-blue-700">📊 ${usage}</span><span class="text-emerald-600">🗑️ ${pS}</span><span class="text-purple-600">🏥 ${mS}</span>${isS ? '<span class="text-red-500 font-black">!缺</span>' : ''}</div></div></td><td class="p-2 w-16"><input type="text" readonly onclick="openKeypad(${r.ts})" value="${r.qty}" class="w-full text-center font-bold bg-white border border-gray-200 rounded-lg ${isS ? 'text-red-600 border-red-200' : ''}"></td><td class="p-2 text-center w-10"><div class="flex flex-col items-center gap-2">${t === 'pending' ? `<button onclick="move(${r.ts})" class="text-green-600"><i class="icon-check"></i></button>` : ''}<button onclick="delEntry(${r.ts})" class="text-red-300"><i class="icon-trash"></i></button></div></td></tr>`;
                     }).join('');
                     
@@ -1562,13 +1787,36 @@
             return null;
         }
 
-        function handleIdInput() {
-            const id = document.getElementById('drugId').value, matched = getDrugInfo(id);
-            if (matched && matched.cat !== currentCat) setCat(matched.cat);
-            document.getElementById('mainStockWarning').classList.add('hidden');
-            updateMatchedUI();
-        }
+function handleIdInput() {
+    const inputEl = document.getElementById('drugId');
+    const clearBtn = document.getElementById('clearIdBtn');
+    
+    // 如果有字就顯示 X，沒字就隱藏
+    if (inputEl.value.length > 0) {
+        clearBtn.classList.remove('hidden');
+    } else {
+        clearBtn.classList.add('hidden');
+    }
 
+    // 你原本的邏輯 (例如 getDrugInfo, setCat 等)
+    const matched = getDrugInfo(inputEl.value);
+    if (!inputEl.value.trim() || !matched) {
+        setCat(null);
+    } else {
+        setCat(matched.cat);
+    }
+    updateMatchedUI();
+}
+function clearItemCode() {
+    const input = document.getElementById('drugId');
+    input.value = "";              // 1. 清空文字
+    input.focus();                 // 2. 保持游標在框內，方便立刻輸入下一個
+    
+    document.getElementById('clearIdBtn').classList.add('hidden'); // 3. 隱藏自己
+    
+    setCat(null);                  // 4. 熄燈
+    updateMatchedUI();             // 5. 清空下方藥名顯示
+}
         function updateMatchedUI() {
             const idInput = document.getElementById('drugId').value, matched = getDrugInfo(idInput);
             const box = document.getElementById('drugInfoBox'), content = document.getElementById('drugInfoContent');
@@ -1580,45 +1828,121 @@
             } else { box.style.borderTopColor = "#e5e7eb"; content.innerHTML = `<div class="opacity-40 italic text-[11px] text-gray-400">${idInput ? '⚠️ 找不到藥物' : '等待輸入代碼...'}</div>`; }
         }
 
-        function addEntry(type, customId = null, customQty = null) {
-            const idVal = customId || document.getElementById('drugId').value, matched = getDrugInfo(idVal);
-            if (!matched && !customId) return;
-            const qtyVal = parseFloat(customQty !== null ? (customQty || 0) : document.getElementById('qty').value);
-            if (type === 'delivery' && (isNaN(qtyVal) || qtyVal <= 0)) { showAlert("⚠️ 請輸入有效數量！"); return; }
-            const idToSave = matched ? matched.originalId : idVal.toUpperCase();
-            const cid = cleanId(idToSave);
-            if (type === 'delivery') {
-                const idx = records.findIndex(r => cleanId(r.id) === cid && r.type === 'delivery');
-                if (idx !== -1) { if (qtyVal > records[idx].qty) records[idx].qty = qtyVal; }
-                else { records.unshift({ type, cat: matched ? matched.cat : currentCat, id: idToSave, name: matched ? matched.info[0] : "手動項目", locator: matched ? matched.info[1] : "--", usage: matched ? matched.info[2] : "0", qty: qtyVal, ts: Date.now() }); }
-                excludedWatch.add(cid); 
+       function addEntry(type, customId = null, customQty = null) {
+    const idVal = customId || document.getElementById('drugId').value, matched = getDrugInfo(idVal);
+    if (!matched && !customId) return;
+    
+    const qtyVal = parseFloat(customQty !== null ? (customQty || 0) : document.getElementById('qty').value);
+    
+    if (type === 'delivery' && (isNaN(qtyVal) || qtyVal <= 0)) { 
+        showAlert("⚠️ 請輸入有效數量！"); 
+        return; 
+    }
+
+    const idToSave = matched ? matched.originalId : idVal.toUpperCase();
+    const cid = cleanId(idToSave);
+
+    excludedWatch.add(cid); 
+
+    if (type === 'delivery') {
+        const idx = records.findIndex(r => cleanId(r.id) === cid && r.type === 'delivery');
+        if (idx !== -1) { 
+            // --- 修改部分：加入提示 ---
+            if (qtyVal > records[idx].qty) {
+                const oldQty = records[idx].qty;
+                records[idx].qty = qtyVal; 
+                // 這裡用簡單的提示，讓你知道更新了
+                showAlert(`已更新：${idToSave}\n由 ${oldQty} 改為最大值 ${qtyVal}`);
             } else {
-                records.unshift({ type, cat: matched ? matched.cat : currentCat, id: idToSave, name: matched ? matched.info[0] : "手動項目", locator: matched ? matched.info[1] : "--", usage: matched ? matched.info[2] : "0", qty: qtyVal || 0, ts: Date.now() });
+                showAlert(`提示：清單已有 ${idToSave}\n現有數量 ${records[idx].qty} 較大，維持不變。`);
             }
-            if (!customId) { document.getElementById('drugId').value = ""; document.getElementById('qty').value = ""; updateMatchedUI(); }
-            renderTables(); save();
+            // -------------------------
+        } else { 
+            records.unshift({ type, cat: matched ? matched.cat : currentCat, id: idToSave, name: matched ? matched.info[0] : "手動項目", locator: matched ? matched.info[1] : "--", usage: matched ? matched.info[2] : "0", qty: qtyVal, ts: Date.now() }); 
         }
+    } else {
+        records.unshift({ type: 'pending', cat: matched ? matched.cat : currentCat, id: idToSave, name: matched ? matched.info[0] : "手動項目", locator: matched ? matched.info[1] : "--", usage: matched ? matched.info[2] : "0", qty: qtyVal || 0, ts: Date.now() });
+    }
+
+    if (!customId) { 
+        document.getElementById('drugId').value = ""; 
+        document.getElementById('qty').value = ""; 
+        setCat(null); 
+        updateMatchedUI(); 
+    }
+    
+    renderTables(); 
+    save();
+            
+        if (!customId) { 
+        document.getElementById('drugId').value = ""; 
+        document.getElementById('qty').value = ""; 
+        
+        // --- 加入下面這一行 ---
+        setCat(null); 
+        // ---------------------
+
+        updateMatchedUI(); 
+    }
+    
+    renderTables(); 
+    save();
+}
 
         function delWatch(id) { excludedWatch.add(cleanId(id)); renderTables(); save(); }
         function delEntry(ts) { records = records.filter(r => r.ts !== ts); renderTables(); save(); }
         
-        function move(ts) { 
-            const r = records.find(i => i.ts === ts); 
-            if (r) {
-                if (parseFloat(r.qty) <= 0) { showAlert("⚠️ 請先輸入數量！"); return; }
-                const cid = cleanId(r.id), deliveryIdx = records.findIndex(rec => cleanId(rec.id) === cid && rec.type === 'delivery');
-                if (deliveryIdx !== -1) {
-                    if (parseFloat(r.qty) > parseFloat(records[deliveryIdx].qty)) records[deliveryIdx].qty = r.qty;
-                    records = records.filter(i => i.ts !== ts);
-                } else {
-                    r.type = 'delivery'; records = records.filter(i => i.ts !== ts); records.unshift(r); 
-                }
-                excludedWatch.add(cid); renderTables(); save(); 
-            } 
+       function move(ts) { 
+    const r = records.find(i => i.ts === ts); 
+    if (r) {
+        if (parseFloat(r.qty) <= 0) { 
+            showAlert("⚠️ 請先輸入數量！"); 
+            return; 
         }
+        
+        const cid = cleanId(r.id);
+        // 尋找出貨清單中是否已有相同的藥物
+        const deliveryIdx = records.findIndex(rec => cleanId(rec.id) === cid && rec.type === 'delivery');
+        
+        if (deliveryIdx !== -1) {
+            // --- 重複檢查與提示邏輯 ---
+            const oldQty = parseFloat(records[deliveryIdx].qty);
+            const newQty = parseFloat(r.qty);
+            
+            if (newQty > oldQty) {
+                records[deliveryIdx].qty = newQty;
+                showAlert(`已更新出貨清單：${r.id}\n由 ${oldQty} 改為最大值 ${newQty}`);
+            } else {
+                showAlert(`提示：出貨清單已有 ${r.id}\n現有數量 ${oldQty} 較大，維持不變。`);
+            }
+            // 處理完重複後，刪除原本在待查機的這筆
+            records = records.filter(i => i.ts !== ts);
+            // -----------------------
+        } else {
+            // 如果出貨清單沒有，則正常移動
+            r.type = 'delivery'; 
+            records = records.filter(i => i.ts !== ts); 
+            records.unshift(r); 
+        }
+        
+        excludedWatch.add(cid); 
+        renderTables(); 
+        save(); 
+    } 
+}
 
         function updateQty(ts, val) { const r = records.find(i => i.ts === ts); if (r) { r.qty = val; renderTables(); save(); } }
-        function setCat(cat) { currentCat = cat; ['C', 'L2PM', 'SFI'].forEach(c => document.getElementById(`tab-${c}`).classList.toggle(`tab-active-${c}`, c === cat)); updateMatchedUI(); }
+        function setCat(cat) {
+    currentCat = cat;
+    // 更新視覺狀態
+    ['C', 'L2PM', 'SFI'].forEach(c => {
+        const el = document.getElementById(`tab-${c}`);
+        if (el) {
+            // 如果傳入的 cat 匹配，則亮起；否則熄滅
+            el.classList.toggle(`tab-active-${c}`, c === cat);
+        }
+    });
+}
         
         function setThreshold(val) { 
             watchThreshold = val; 
@@ -1647,32 +1971,67 @@
         function updateLabel(type) { const count = Object.keys(type === 'p' ? pInventory : mInventory).length; document.getElementById(type + 'Label').innerText = count > 0 ? `已載入 ${count} 項` : '未載入'; }
         
         function confirmClearAll() { showAlert("⚠️ 注意：這將清空所有資料！", () => { records = []; pInventory = {}; mInventory = {}; excludedWatch = new Set(); isInventoryLoaded = false; updateLabel('p'); updateLabel('m'); renderTables(); save(); localStorage.clear(); }); }
-        
-        function exportExcel() {
+  function confirmClearPending() {
+    const pendingCount = records.filter(r => r.type === 'pending').length;
+    if (pendingCount === 0) return showAlert("待查機清單是空的。");
+
+    showAlert(`⚠️ 確定要清空這 ${pendingCount} 項待查機紀錄嗎？`, () => {
+        // 只保留不是 'pending' 類型的記錄
+        records = records.filter(r => r.type !== 'pending');
+        renderTables();
+        save();
+    });
+}
+
+// 修改後的清空出貨（保持與之前一致）
+function confirmClearDelivery() {
+    const deliveryCount = records.filter(r => r.type === 'delivery').length;
+    if (deliveryCount === 0) return showAlert("出貨清單是空的。");
+
+    showAlert(`⚠️ 確定要清空這 ${deliveryCount} 項出貨紀錄嗎？`, () => {
+        records = records.filter(r => r.type !== 'delivery');
+        excludedWatch = new Set(); // 清空出貨後，讓觀察清單可以重新計算
+        renderTables();
+        save();
+    });
+}
+function exportExcel() {
     const deliveryItems = records.filter(r => r.type === 'delivery');
     if (deliveryItems.length === 0) return showAlert("❌ 出貨清單是空的");
 
-    // 1. 準備藥物數據（只有 Item Code 和 Qty）
+    // 1. 手動格式化日期，避免手機系統格式衝突 (結果為 YYYY/MM/DD)
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    const d = now.getDate();
+    const dateStr = `${y}/${m}/${d}`;
+
+    // 2. 準備藥物數據（只有 Item Code 和 Qty）
     const rows = deliveryItems.map(r => [r.id, r.qty]);
 
-    // 2. 建立工作表，標題放在第 2 行（Excel 的 A2, B2），數據從第 3 行開始
-    const ws = XLSX.utils.aoa_to_sheet([
-        [], // 第一行留空給日期
-        ["Item Code", "Qty"] // 第二行是標題
-    ]);
+    // 3. 建立工作表
+    // 第一行 A1, B1 留空，第二行 A2, B2 是標題
+    const wsData = [
+        ["", "", dateStr],   // 第一行：A1="", B1="", C1=日期
+        ["Item Code", "Qty"] // 第二行：A2, B2 標題
+    ];
 
-    // 3. 將藥物數據加入到標題下方（從 A3 開始）
+    // 建立工作表並加入數據（數據從 A3 開始，即索引 2）
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
     XLSX.utils.sheet_add_aoa(ws, rows, { origin: "A3" });
 
-    // 4. 在 C1 儲存格放入日期
-    const dateStr = new Date().toLocaleDateString();
-    ws["C1"] = { t: "s", v: dateStr };
-
-    // 5. 匯出檔案
+    // 4. 確保檔案格式
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "P倉出貨");
-    XLSX.writeFile(wb, `P倉出貨_${dateStr.replace(/\//g, '-')}.xlsx`);
+    
+    // 5. 執行下載
+    const fileName = `P倉出貨_${y}-${m}-${d}.xlsx`;
+    XLSX.writeFile(wb, fileName);
         }
+function toggleWatchlist() {
+    isWatchlistExpanded = !isWatchlistExpanded;
+    renderTables();
+}
     </script>
 </body>
 </html>
