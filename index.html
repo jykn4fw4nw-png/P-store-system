@@ -13,19 +13,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        /* 基礎優化：防止選取文字，模擬原生 APP 感 */
         * { 
             -webkit-tap-highlight-color: transparent; 
             touch-action: manipulation;
+            user-select: none;
         }
-        html { height: 100%; overflow: hidden; }
+        input { user-select: auto; }
+
+        html { height: 100%; overflow: hidden; background: #f4f7f6; }
         body { 
-            font-family: -apple-system, system-ui, sans-serif; 
-            background: #f4f7f6; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             height: 100%;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
         
+        /* 標籤顏色 */
         .tab-active-C { background-color: #007bff !important; color: white !important; }
         .tab-active-L2PM { background-color: #28a745 !important; color: white !important; }
         .tab-active-SFI { background-color: #fd7e14 !important; color: white !important; }
@@ -33,41 +39,42 @@
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        .icon-trash { display: inline-block; width: 18px; height: 18px; background-color: currentColor; -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 6h18v2H3V6m2 3h14v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9m3 3v7h2v-7H8m4 0v7h2v-7h-2m4 0v7h2v-7h-2m4 0v7h2v-7h-2M9 4l1-1h4l1 1h5v2H4V4h5z'/></svg>") no-repeat center; mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 6h18v2H3V6m2 3h14v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9m3 3v7h2v-7H8m4 0v7h2v-7h-2m4 0v7h2v-7h-2m4 0v7h2v-7h-2M9 4l1-1h4l1 1h5v2H4V4h5z'/></svg>") no-repeat center; }
+        /* 圖示 */
+        .icon-trash { display: inline-block; width: 18px; height: 18px; background-color: currentColor; -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 6h18v2H3V6m2 3h14v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9m3 3v7h2v-7H8m4 0v7h2v-7h-2m4 0v7h2v-7h-2m4 0v7h2v-7h-2M9 4l1-1h4l1 1h5v2H4V4h5z'/></svg>") no-repeat center; }
         .icon-check { display: inline-block; width: 22px; height: 22px; background-color: currentColor; -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/></svg>") no-repeat center; }
         
         #customAlert { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3000; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 85%; max-width: 320px; text-align: center; border: 1px solid #eee; }
         #overlay { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.4); z-index: 1000; 
-            backdrop-filter: blur(2px); /* 輕微模糊背景 */
+            background: rgba(0,0,0,0.3); z-index: 1000; 
+            /* 移除背景模糊 */
         }
         
-        /* 計算機：加入流暢動畫與 GPU 加速 */
+        /* 計算機：置於中下方且居中 */
         #numKeypad { 
             visibility: hidden;
             opacity: 0;
             position: fixed; 
-            top: 55%; 
-            left: 50%; 
-            transform: translate(-50%, -45%) scale(0.95); 
-            width: 95%; 
-            max-width: 400px; 
+            bottom: 10%; 
+            left: 50%;
+            width: 90%; 
+            max-width: 350px;
             background: #e5e7eb; 
             z-index: 2000; 
             padding: 15px; 
-            border-radius: 28px; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.3); 
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 24px; 
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3); 
+            transform: translate(-50%, 20px) scale(0.95);
+            transition: all 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
             will-change: transform, opacity;
         }
         #numKeypad.show {
             visibility: visible;
             opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
+            transform: translate(-50%, 0) scale(1);
         }
 
-        .key-btn { background: white; border-radius: 12px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; color: #374151; box-shadow: 0 2px 0 #d1d5db; -webkit-user-select: none; }
+        .key-btn { background: white; border-radius: 12px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; color: #374151; box-shadow: 0 2px 0 #d1d5db; }
         .key-btn:active { background: #f3f4f6; transform: translateY(1px); box-shadow: none; }
         .key-op { background: #f97316; color: white; }
         .key-confirm { background: #2563eb; color: white; }
@@ -76,6 +83,18 @@
         .item-code-badge { font-family: monospace; background-color: #dbeafe; color: #1d4ed8; padding: 1px 6px; border-radius: 4px; font-weight: 800; font-size: 11px; display: inline-block; }
         .watch-locator-badge { font-family: monospace; background-color: #fef08a; color: #854d0e; padding: 1px 6px; border-radius: 4px; font-weight: 800; font-size: 11px; display: inline-block; }
         .filter-btn-active { background-color: white !important; color: #dc2626 !important; font-weight: 900 !important; }
+
+        /* 系統管理收納動畫 */
+        #mgmtBody {
+            transition: max-height 0.3s ease-out, opacity 0.2s ease-in;
+            max-height: 500px;
+            overflow: hidden;
+        }
+        #mgmtBody.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+        }
     </style>
 </head>
 <body class="p-3 pb-24 text-[14px]">
@@ -93,7 +112,7 @@
     <div id="numKeypad" oncontextmenu="return false;">
         <div class="flex justify-between items-center mb-3 px-2">
             <div id="keypadDisplay" class="text-2xl font-black text-blue-600 bg-white px-4 py-2 rounded-xl flex-1 mr-2 shadow-inner text-right min-h-[52px] flex items-center justify-end border border-gray-200">0</div>
-            <button onclick="closeKeypad()" class="bg-gray-500 text-white px-4 py-3 rounded-xl font-bold shadow-md active:bg-gray-600">關閉</button>
+            <button onclick="closeKeypad()" class="bg-gray-400 text-white px-4 py-3 rounded-xl font-bold active:bg-gray-500">關閉</button>
         </div>
         <div class="grid grid-cols-4 gap-2">
             <button class="key-btn" onclick="pressKey('7')">7</button><button class="key-btn" onclick="pressKey('8')">8</button><button class="key-btn" onclick="pressKey('9')">9</button><button class="key-btn key-op" onclick="pressKey('+')">+</button>
@@ -105,31 +124,37 @@
 
     <div class="max-w-md mx-auto">
         <div class="mb-4 bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
-            <h3 class="text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest text-center">📊 系統管理</h3>
-            <div class="flex flex-col gap-2">
-                <div class="grid grid-cols-2 gap-2">
-                    <label class="flex flex-col items-center justify-center bg-emerald-50 text-emerald-700 py-2 rounded-xl border border-emerald-100 cursor-pointer active:bg-emerald-100 transition-colors">
-                        <span class="text-[11px] font-bold">📂 P 倉</span>
-                        <span id="pLabel" class="text-[9px] opacity-60">未載入</span>
-                        <input type="file" id="pExcel" accept=".xlsx, .xls" class="hidden" onchange="processExcel(this, 'p')">
-                    </label>
-                    <label class="flex flex-col items-center justify-center bg-purple-50 text-purple-700 py-2 rounded-xl border border-purple-100 cursor-pointer active:bg-purple-100 transition-colors">
-                        <span class="text-[11px] font-bold">📂 Main 倉</span>
-                        <span id="mLabel" class="text-[9px] opacity-60">未載入</span>
-                        <input type="file" id="mExcel" accept=".xlsx, .xls" class="hidden" onchange="processExcel(this, 'm')">
-                    </label>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="exportExcel()" class="bg-green-700 text-white py-2 rounded-xl font-bold text-xs shadow-sm active:bg-green-800">📊 匯出 Excel</button>
-                    <button onclick="confirmClearAll()" class="bg-red-50 text-red-500 border border-red-200 py-2 rounded-xl font-bold text-xs active:bg-red-100">🗑️ 全清空</button>
+            <div onclick="toggleMgmt()" class="flex justify-between items-center cursor-pointer">
+                <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">📊 系統管理</h3>
+                <span id="mgmtIcon" class="text-gray-400 text-[12px] font-bold transition-transform duration-300">▼</span>
+            </div>
+            
+            <div id="mgmtBody" class="collapsed mt-3">
+                <div class="flex flex-col gap-2">
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex flex-col items-center justify-center bg-emerald-50 text-emerald-700 py-3 rounded-xl border border-emerald-100 cursor-pointer active:bg-emerald-100">
+                            <span class="text-[11px] font-bold">📂 P 倉</span>
+                            <span id="pLabel" class="text-[9px] opacity-60">未載入</span>
+                            <input type="file" id="pExcel" accept=".xlsx, .xls" class="hidden" onchange="processExcel(this, 'p')">
+                        </label>
+                        <label class="flex flex-col items-center justify-center bg-purple-50 text-purple-700 py-3 rounded-xl border border-purple-100 cursor-pointer active:bg-purple-100">
+                            <span class="text-[11px] font-bold">📂 Main 倉</span>
+                            <span id="mLabel" class="text-[9px] opacity-60">未載入</span>
+                            <input type="file" id="mExcel" accept=".xlsx, .xls" class="hidden" onchange="processExcel(this, 'm')">
+                        </label>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="exportExcel()" class="bg-green-700 text-white py-3 rounded-xl font-bold text-xs active:bg-green-800">📊 匯出 Excel</button>
+                        <button onclick="confirmClearAll()" class="bg-red-50 text-red-500 border border-red-200 py-3 rounded-xl font-bold text-xs active:bg-red-100">🗑️ 全清空</button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="flex gap-1 mb-3 sticky top-0 z-50 bg-[#f4f7f6] py-2 no-scrollbar overflow-x-auto">
-            <button onclick="setCat('L2PM')" id="tab-L2PM" class="flex-1 min-w-[70px] py-3 text-xs font-bold rounded-xl bg-gray-200 text-gray-400 transition-all tab-active-L2PM">📦 L2PM</button>
-            <button onclick="setCat('C')" id="tab-C" class="flex-1 min-w-[70px] py-3 text-xs font-bold rounded-xl bg-gray-200 text-gray-400 transition-all">❄️雪貨</button>
-            <button onclick="setCat('SFI')" id="tab-SFI" class="flex-1 min-w-[70px] py-3 text-xs font-bold rounded-xl bg-gray-200 text-gray-400 transition-all">💰 SFI</button>
+            <button onclick="setCat('L2PM')" id="tab-L2PM" class="flex-1 min-w-[70px] py-3.5 text-xs font-bold rounded-xl bg-gray-200 text-gray-400 transition-all tab-active-L2PM">📦 L2PM</button>
+            <button onclick="setCat('C')" id="tab-C" class="flex-1 min-w-[70px] py-3.5 text-xs font-bold rounded-xl bg-gray-200 text-gray-400 transition-all">❄️雪貨</button>
+            <button onclick="setCat('SFI')" id="tab-SFI" class="flex-1 min-w-[70px] py-3.5 text-xs font-bold rounded-xl bg-gray-200 text-gray-400 transition-all">💰 SFI</button>
         </div>
 
         <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
@@ -188,9 +213,9 @@
     </div>
 
     <script>
-        // 資料結構保持不變
+        // 資料與變數保持一致
         const drugMaster = {
-            "C": {
+            "C": { 
 "FILG04": ["FILGRASTIM (NIVESTIM) PREFILLED SYRINGE 30MU (300MCG)/0.5ML", "C1.A.1", "900"],
 "OXYT03": ["OXYTOCIN INJECTION 10U/ML 1ML", "C1.B.1", "1000"],
 "INSU48": ["INSULIN LISPRO HUMAN(HUMALOG KWIKPEN)PREFIL PEN 100U/ML 3ML", "C1.B.2", "50"],
@@ -286,7 +311,7 @@
 "TRIP09": ["TRIPTORELIN (ACETATE) SYRINGE 3.75MG", "R8.K.2", "0"],
 
             },
-            "L2PM": {
+            "L2PM": { 
 "ABAC01": ["ABACAVIR (SULPHATE) TABLET 300MG", "F4A.2", "0"],
 "ACAR01": ["ACARBOSE TABLET 100MG", "B2E.1", "500"],
 "ACET04": ["ACETAZOLAMIDE (SODIUM) INJECTION 500MG", "A1A.1", "10"],
@@ -1177,8 +1202,8 @@
 "ZIPR02": ["ZIPRASIDONE (HCL) CAPSULE 40MG", "E3B.6", "90"],
 "ZOLE01": ["ZOLEDRONIC ACID (ZOMETA (OR EQUIV)) INFUSION 0.8MG/ML 5ML", "B2C.2", "200"],
 "ZUCL07": ["ZUCLOPENTHIXOL DECANOATE IM INJECTION 200MG/ML 1ML", "B2C.4", "10"],
-            },
-            "SFI": {
+                    },
+            "SFI": { 
 "ALTE01": ["ALTEPLASE (ACTILYSE) INJECTION 50MG", "A1D.1", "30"],
 "PROT17": ["PROTHROMBIN COMPLEX CONC. (BERIPLEX P/N) INJECTION 500 IU", "A2D.7", "50"],
 "FACT20": ["FACTOR VIIA (ACTIVATED EPTACOG ALFA) INJECTION 1MG (50KIU)", "A4B.6", "2"],
@@ -1356,7 +1381,7 @@
 "FULV02": ["FULVESTRANT PREFILLED SYRINGE 50MG/ML 5ML", "R9.H.1", "44"],
 "TOCI08": ["TOCILIZUMAB PREFILLED SYRINGE 162MG/0.9ML", "R9.J.1", "17"],
 
-            }
+                   }
         };
 
         const catColors = { "C": "#007bff", "L2PM": "#28a745", "SFI": "#fd7e14" };
@@ -1366,6 +1391,14 @@
         let currentCat = 'L2PM', watchThreshold = 0.5, isInventoryLoaded = false;
         let expandStates = { delivery: false, pending: false };
         let keypadTarget = null, keypadString = "0";
+
+        // 折疊控制
+        function toggleMgmt() {
+            const body = document.getElementById('mgmtBody');
+            const icon = document.getElementById('mgmtIcon');
+            const isCollapsed = body.classList.toggle('collapsed');
+            icon.style.transform = isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
 
         function cleanId(id) { return id ? id.toString().replace(/\s+/g, '').toUpperCase() : ""; }
         function save() { 
@@ -1385,9 +1418,14 @@
                 updateLabel('p'); updateLabel('m'); 
             }
             setThreshold(watchThreshold); renderTables();
+            
+            // 防止 Safari 雙擊縮放
+            document.addEventListener('touchstart', (e) => {
+                if (e.touches.length > 1) e.preventDefault();
+            }, { passive: false });
         };
 
-        // --- 優化的彈窗控制 ---
+        // --- 彈窗控制 ---
         function openKeypad(target) {
             keypadTarget = target;
             let currentVal = "";
@@ -1399,7 +1437,6 @@
             updateKeypadDisplay();
             
             document.getElementById('overlay').style.display = 'block';
-            // 使用 class 切換動畫
             setTimeout(() => document.getElementById('numKeypad').classList.add('show'), 10);
         }
 
@@ -1438,7 +1475,7 @@
 
         function closeAllModals() { closeAlert(); closeKeypad(); }
 
-        // --- 優化的渲染函式 (使用 RequestAnimationFrame 與 String Builder) ---
+        // --- 渲染渲染渲染 ---
         function renderTables() {
             const existingInDelivery = new Set(records.filter(r => r.type === 'delivery').map(r => cleanId(r.id)));
             let watchList = [];
@@ -1449,12 +1486,11 @@
                         const cid = cleanId(id);
                         if (existingInDelivery.has(cid) || excludedWatch.has(cid)) continue;
                         const info = drugMaster[c][id], monthly = parseFloat(info[2]), onHand = pInventory[cid] ?? 0;
-                        const ratio = monthly > 0 ? (onHand / monthly).toFixed(2) : (onHand > 0 ? "N/A" : 0);
                         let show = false;
                         if (watchThreshold === 'ALL_C') { if (c === 'C') show = true; }
                         else if (watchThreshold === 'ALL_SFI') { if (c === 'SFI') show = true; }
                         else { if (c === 'L2PM' && monthly > 0 && (onHand / monthly) <= watchThreshold) show = true; }
-                        if (show) watchList.push({ id, cat: c, name: info[0], locator: info[1], monthly, onHand, ratio });
+                        if (show) watchList.push({ id, cat: c, name: info[0], locator: info[1], monthly, onHand, ratio: (onHand/monthly).toFixed(2) });
                     }
                 }
             }
@@ -1477,13 +1513,12 @@
                         if(eb) eb.classList.add('hidden');
                     }
 
-                    // 使用 Array Join 提升效能
                     const htmlRows = items.map(r => {
                         const cid = cleanId(r.id), pS = pInventory[cid] ?? (isInventoryLoaded ? 0 : '--'), mS = mInventory[cid] ?? (isInventoryLoaded ? 0 : '--');
                         const usage = r.usage || (r.monthly) || '0', isS = isInventoryLoaded && parseFloat(r.qty) > parseFloat(mS);
                         
                         if (t === 'watch') {
-                            const ratioTag = (watchThreshold === 'ALL_C' || watchThreshold === 'ALL_SFI') ? `<span class="bg-red-100 text-red-600 px-1 rounded font-bold ml-1 text-[9px]">${r.ratio}x</span>` : '';
+                            const ratioTag = `<span class="bg-red-100 text-red-600 px-1 rounded font-bold ml-1 text-[9px]">${r.ratio}x</span>`;
                             return `<tr class="bg-white/40"><td class="p-2 text-center w-8">${catIcons[r.cat]}</td><td class="p-2"><div class="font-bold leading-tight text-gray-800 mb-1 text-[12px]">${r.name}</div><div class="flex flex-col gap-1"><div class="flex items-center gap-1"><span class="item-code-badge">${r.id}</span><span class="watch-locator-badge">📍 ${r.locator}</span></div><div class="flex flex-wrap items-center gap-2"><span class="text-[9px] font-bold text-blue-700">📊 ${usage}</span><span class="text-[9px] font-bold text-emerald-600">🗑️ ${pS}</span><span class="text-[9px] font-bold text-purple-600">🏥 ${mS}</span>${ratioTag}${isS ? '<span class="text-red-600 font-black text-[9px]">!缺</span>' : ''}</div></div></td><td class="p-2 text-right w-36"><div class="flex gap-1 justify-end items-center"><input type="text" id="watch-qty-${cid}" readonly onclick="openKeypad('watch-qty-${cid}')" class="w-10 h-7 text-center font-bold bg-white border border-red-200 rounded text-[10px] outline-none"><button onclick="addEntry('delivery','${r.id}', document.getElementById('watch-qty-${cid}').value)" class="bg-red-600 text-white px-2 h-7 rounded text-[9px] font-bold">出貨</button><button onclick="delWatch('${r.id}')" class="text-gray-300 ml-1"><i class="icon-trash"></i></button></div></td></tr>`;
                         }
                         return `<tr><td class="p-2 text-center w-8">${catIcons[r.cat]}</td><td class="p-2"><div class="font-bold text-[12px] leading-tight text-gray-800 mb-1">${r.name}</div><div class="flex items-center gap-2"><span class="item-code-badge">${r.id}</span><div class="flex flex-wrap gap-2 text-[8px] font-bold"><span class="text-blue-500">📍 ${r.locator}</span><span class="text-blue-700">📊 ${usage}</span><span class="text-emerald-600">🗑️ ${pS}</span><span class="text-purple-600">🏥 ${mS}</span>${isS ? '<span class="text-red-500 font-black">!缺</span>' : ''}</div></div></td><td class="p-2 w-16"><input type="text" readonly onclick="openKeypad(${r.ts})" value="${r.qty}" class="w-full text-center font-bold bg-white border border-gray-200 rounded-lg ${isS ? 'text-red-600 border-red-200' : ''}"></td><td class="p-2 text-center w-10"><div class="flex flex-col items-center gap-2">${t === 'pending' ? `<button onclick="move(${r.ts})" class="text-green-600"><i class="icon-check"></i></button>` : ''}<button onclick="delEntry(${r.ts})" class="text-red-300"><i class="icon-trash"></i></button></div></td></tr>`;
@@ -1494,7 +1529,7 @@
             });
         }
 
-        // --- 其餘邏輯保持不變 ---
+        // --- 核心逻辑 ---
         function getLocatorWeight(cat, locator) {
             const loc = (locator || "").toUpperCase();
             if (cat === 'C') { if (loc.startsWith('R8')) return 10; if (loc.startsWith('R1')) return 20; if (loc.startsWith('R2')) return 30; if (loc.startsWith('R3')) return 40; if (loc.startsWith('C')) return 50; }
@@ -1514,6 +1549,7 @@
                 });
                 if (type === 'p') { pInventory = tempInv; isInventoryLoaded = true; } else { mInventory = tempInv; }
                 renderTables(); save(); updateLabel(type); updateMatchedUI();
+                if (type === 'm' || type === 'p') toggleMgmt(); // 載入後自動收起
             };
             reader.readAsArrayBuffer(file);
         }
@@ -1607,6 +1643,7 @@
 
         function closeAlert() { document.getElementById('customAlert').style.display = 'none'; if(!keypadTarget) document.getElementById('overlay').style.display = 'none'; }
         function updateLabel(type) { const count = Object.keys(type === 'p' ? pInventory : mInventory).length; document.getElementById(type + 'Label').innerText = count > 0 ? `已載入 ${count} 項` : '未載入'; }
+        
         function confirmClearAll() { showAlert("⚠️ 注意：這將清空所有資料！", () => { records = []; pInventory = {}; mInventory = {}; excludedWatch = new Set(); isInventoryLoaded = false; updateLabel('p'); updateLabel('m'); renderTables(); save(); localStorage.clear(); }); }
         
         function exportExcel() {
