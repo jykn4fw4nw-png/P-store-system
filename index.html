@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
  
-如有BUG請通知MIKE
+<!-- 如有BUG請通知MIKE -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>P倉寫貨系統 - 專業版</title>
+    <title>P倉寫貨系統 - 企業專業版</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3045/3045387.png">
@@ -16,6 +16,45 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
+        /* 基礎優化：防止選取文字，模擬原生 APP 感 */
+        * { 
+            -webkit-tap-highlight-color: transparent; 
+            touch-action: manipulation;
+            user-select: none;
+        }
+        input { user-select: auto; }
+
+        /* 高級冷灰背景 */
+        html { height: 100%; overflow: hidden; background: #f8fafc; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-top: calc(env(safe-area-inset-top) + 3vh);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* 標籤顏色 (iOS Segmented Control 現代風格) */
+        .tab-active-C { background-color: #3b82f6 !important; color: white !important; box-shadow: 0 4px 10px -2px rgba(59, 130, 246, 0.4); transform: scale(1.02); }
+        .tab-active-L2PM { background-color: #10b981 !important; color: white !important; box-shadow: 0 4px 10px -2px rgba(16, 185, 129, 0.4); transform: scale(1.02); }
+        .tab-active-SFI { background-color: #f59e0b !important; color: white !important; box-shadow: 0 4px 10px -2px rgba(245, 158, 11, 0.4); transform: scale(1.02); }
+        
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* 系統管理收納動畫 */
+        #mgmtBody {
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out;
+            max-height: 600px;
+            opacity: 1;
+            overflow: hidden;
+        }
+        #mgmtBody.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
+
         /* 觀察清單收納動畫 */
         #watchBody {
             transition: max-height 0.3s ease-out, opacity 0.2s ease-in;
@@ -26,60 +65,35 @@
             max-height: 0;
             opacity: 0;
         }
-
-        /* 基礎優化：防止選取文字，模擬原生 APP 感 */
-        * { 
-            -webkit-tap-highlight-color: transparent; 
-            touch-action: manipulation;
-            user-select: none;
-        }
-        input { user-select: auto; }
-
-        html { height: 100%; overflow: hidden; background: #f4f7f6; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            height: 100%;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            padding-top: calc(env(safe-area-inset-top) + 5vh);
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-        
-        /* 標籤顏色 */
-        .tab-active-C { background-color: #007bff !important; color: white !important; }
-        .tab-active-L2PM { background-color: #28a745 !important; color: white !important; }
-        .tab-active-SFI { background-color: #fd7e14 !important; color: white !important; }
-        
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
         
         /* 圖示 */
         .icon-trash { display: inline-block; width: 18px; height: 18px; background-color: currentColor; -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 6h18v2H3V6m2 3h14v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9m3 3v7h2v-7H8m4 0v7h2v-7h-2m4 0v7h2v-7h-2m4 0v7h2v-7h-2M9 4l1-1h4l1 1h5v2H4V4h5z'/></svg>") no-repeat center; }
         .icon-check { display: inline-block; width: 22px; height: 22px; background-color: currentColor; -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/></svg>") no-repeat center; }
         
-        #customAlert { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3000; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 85%; max-width: 320px; text-align: center; border: 1px solid #eee; }
+        #customAlert { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3000; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 24px; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); width: 85%; max-width: 320px; text-align: center; border: 1px solid rgba(255,255,255,0.4); }
         #overlay { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.3); z-index: 1000; 
+            background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(2px); z-index: 1000; 
         }
         
-        /* 計算機：置於中下方且居中 */
+        /* 📱 立體機械鍵盤 (Ultimate 3D UI) */
         #numKeypad { 
             visibility: hidden;
             opacity: 0;
             position: fixed; 
-            bottom: 10%; 
+            bottom: 5%; 
             left: 50%;
-            width: 90%; 
-            max-width: 350px;
-            background: #e5e7eb; 
+            width: 94%; 
+            max-width: 380px;
+            background: #e2e8f0; 
             z-index: 2000; 
-            padding: 15px; 
-            border-radius: 24px; 
-            box-shadow: 0 15px 50px rgba(0,0,0,0.3); 
-            transform: translate(-50%, 20px) scale(0.95);
-            transition: all 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            padding: 16px; 
+            border-radius: 28px; 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.6); 
+            transform: translate(-50%, 30px) scale(0.95);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             will-change: transform, opacity;
+            border: 1px solid #cbd5e1;
         }
         #numKeypad.show {
             visibility: visible;
@@ -87,28 +101,36 @@
             transform: translate(-50%, 0) scale(1);
         }
 
-        .key-btn { background: white; border-radius: 12px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; color: #374151; box-shadow: 0 2px 0 #d1d5db; }
-        .key-btn:active { background: #f3f4f6; transform: translateY(1px); box-shadow: none; }
-        .key-op { background: #f97316; color: white; }
-        .key-confirm { background: #2563eb; color: white; }
-        .key-clear { background: #94a3b8; color: white; }
-
-        .item-code-badge { font-family: monospace; background-color: #dbeafe; color: #1d4ed8; padding: 1px 6px; border-radius: 4px; font-weight: 800; font-size: 11px; display: inline-block; }
-        .watch-locator-badge { font-family: monospace; background-color: #fef08a; color: #854d0e; padding: 1px 6px; border-radius: 4px; font-weight: 800; font-size: 11px; display: inline-block; }
-        .filter-btn-active { background-color: white !important; color: #dc2626 !important; font-weight: 900 !important; }
-
-        /* 系統管理收納動畫 - 流暢優化版 */
-        #mgmtBody {
-            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out, margin-top 0.4s ease;
-            max-height: 300px;
-            opacity: 1;
-            overflow: hidden;
+        .key-btn { 
+            background: #ffffff; 
+            border-radius: 14px; 
+            height: 64px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 26px; 
+            font-weight: 800; 
+            color: #334155; 
+            box-shadow: 0 4px 0 #94a3b8, 0 8px 10px rgba(0,0,0,0.1); 
+            transition: transform 0.1s, box-shadow 0.1s, background 0.1s;
+            border: 1px solid #e2e8f0;
         }
-        #mgmtBody.collapsed {
-            max-height: 0;
-            opacity: 0;
-            margin-top: 0 !important;
+        .key-btn:active { 
+            background: #f8fafc; 
+            transform: translateY(4px); 
+            box-shadow: 0 0px 0 #94a3b8, 0 2px 4px rgba(0,0,0,0.1); 
         }
+        .key-op { background: #f97316; color: white; box-shadow: 0 4px 0 #c2410c, 0 8px 10px rgba(249,115,22,0.2); border-color: #ea580c; }
+        .key-op:active { background: #ea580c; box-shadow: 0 0 0 #c2410c; }
+        .key-confirm { background: #2563eb; color: white; box-shadow: 0 4px 0 #1d4ed8, 0 8px 10px rgba(37,99,235,0.2); border-color: #3b82f6; letter-spacing: 2px;}
+        .key-confirm:active { background: #1d4ed8; box-shadow: 0 0 0 #1e40af; }
+        .key-clear { background: #64748b; color: white; box-shadow: 0 4px 0 #475569; border-color: #94a3b8; }
+        .key-clear:active { background: #475569; box-shadow: 0 0 0 #334155; }
+
+        /* 精緻 Badge 標籤 */
+        .item-code-badge { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background-color: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 6px; font-weight: 800; font-size: 11px; display: inline-block; border: 1px solid #bfdbfe; }
+        .watch-locator-badge { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background-color: #fef9c3; color: #a16207; padding: 2px 8px; border-radius: 6px; font-weight: 800; font-size: 11px; display: inline-block; border: 1px solid #fde047; }
+        .filter-btn-active { background-color: white !important; color: #dc2626 !important; font-weight: 900 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body class="p-3 pb-24 text-[14px]">
@@ -116,174 +138,226 @@
     <div id="overlay" onclick="closeAllModals()"></div>
     
     <div id="customAlert">
-        <p id="alertMsg" class="font-bold text-gray-800 mb-4 whitespace-pre-line"></p>
-        <div class="flex gap-2 justify-center">
-            <button id="alertCancelBtn" onclick="closeAlert()" class="hidden bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold">取消</button>
-            <button id="alertConfirmBtn" onclick="closeAlert()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold">確定</button>
+        <p id="alertMsg" class="font-bold text-slate-800 mb-6 text-lg whitespace-pre-line tracking-wide"></p>
+        <div class="flex gap-3 justify-center">
+            <button id="alertCancelBtn" onclick="closeAlert()" class="hidden bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold active:scale-95 transition-transform">取消</button>
+            <button id="alertConfirmBtn" onclick="closeAlert()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 active:scale-95 transition-transform">確定</button>
         </div>
     </div>
 
+    <!-- 📱 3D 質感計算機 -->
     <div id="numKeypad" oncontextmenu="return false;">
-    <div class="flex justify-between items-center mb-3 px-2">
-        <div id="psHint" class="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded-lg font-bold absolute -top-8 left-2 hidden"></div>
+        <div class="flex justify-between items-center mb-4 px-2 relative">
+            <div id="psHint" class="text-[11px] bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-black absolute -top-8 left-2 hidden shadow-sm border border-blue-200"></div>
+            
+            <div id="keypadDisplay" class="text-3xl font-black text-slate-700 bg-white px-5 py-3 rounded-2xl flex-1 mr-3 shadow-inner text-right min-h-[60px] flex items-center justify-end border-2 border-slate-200">0</div>
+            <button onclick="closeKeypad()" class="bg-slate-400 text-white px-5 py-3.5 rounded-2xl font-bold active:scale-95 transition-transform shadow-md shadow-slate-300">關閉</button>
+        </div>
         
-        <div id="keypadDisplay" class="text-2xl font-black text-blue-600 bg-white px-4 py-2 rounded-xl flex-1 mr-2 shadow-inner text-right min-h-[52px] flex items-center justify-end border border-gray-200">0</div>
-        <button onclick="closeKeypad()" class="bg-gray-400 text-white px-4 py-3 rounded-xl font-bold active:bg-gray-500">關閉</button>
+        <div class="grid grid-cols-4 gap-3">
+            <button class="key-btn" onclick="pressKey('7')">7</button>
+            <button class="key-btn" onclick="pressKey('8')">8</button>
+            <button class="key-btn" onclick="pressKey('9')">9</button>
+            <button class="key-btn key-op" onclick="pressKey('+')">+</button>
+            
+            <button class="key-btn" onclick="pressKey('4')">4</button>
+            <button class="key-btn" onclick="pressKey('5')">5</button>
+            <button class="key-btn" onclick="pressKey('6')">6</button>
+            <button class="key-btn key-op" onclick="pressKey('*')">×</button>
+            
+            <button class="key-btn" onclick="pressKey('1')">1</button>
+            <button class="key-btn" onclick="pressKey('2')">2</button>
+            <button class="key-btn" onclick="pressKey('3')">3</button>
+            <button class="key-btn key-clear" onclick="pressKey('C')">C</button>
+            
+            <button id="psBtn" class="key-btn bg-blue-500 text-white font-black opacity-30 pointer-events-none" onclick="usePackSize()" style="box-shadow: 0 4px 0 #1d4ed8; border-color: #2563eb;">PS</button>
+            <button class="key-btn" onclick="pressKey('0')">0</button>
+            <button class="key-btn" onclick="pressKey('00')">00</button>
+            <button class="key-btn" onclick="pressKey('Backspace')">⌫</button>
+            
+            <button class="key-btn key-confirm col-span-4" onclick="confirmKeypad()">確定輸入</button>
+        </div>
     </div>
-    
-    <div class="grid grid-cols-4 gap-2">
-        <button class="key-btn" onclick="pressKey('7')">7</button>
-        <button class="key-btn" onclick="pressKey('8')">8</button>
-        <button class="key-btn" onclick="pressKey('9')">9</button>
-        <button class="key-btn key-op" onclick="pressKey('+')">+</button>
-        
-        <button class="key-btn" onclick="pressKey('4')">4</button>
-        <button class="key-btn" onclick="pressKey('5')">5</button>
-        <button class="key-btn" onclick="pressKey('6')">6</button>
-        <button class="key-btn key-op" onclick="pressKey('*')">×</button>
-        
-        <button class="key-btn" onclick="pressKey('1')">1</button>
-        <button class="key-btn" onclick="pressKey('2')">2</button>
-        <button class="key-btn" onclick="pressKey('3')">3</button>
-        <button class="key-btn key-clear" onclick="pressKey('C')">C</button>
-        
-        <button id="psBtn" class="key-btn bg-blue-500 text-white font-bold opacity-30 pointer-events-none" onclick="usePackSize()">PS</button>
-        <button class="key-btn" onclick="pressKey('0')">0</button>
-        <button class="key-btn" onclick="pressKey('00')">00</button>
-        <button class="key-btn" onclick="pressKey('Backspace')">⌫</button>
-        
-        <button class="key-btn key-confirm col-span-4" onclick="confirmKeypad()">確定</button>
-    </div>
-</div>
 
     <div class="max-w-md mx-auto">
-        <div class="mb-4 bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
-            <div onclick="toggleMgmt()" class="flex justify-between items-center cursor-pointer">
-                <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">📊 系統管理</h3>
-                <span id="mgmtIcon" class="text-gray-400 text-[20px] font-bold transition-transform duration-300">▼</span>
+        
+        <!-- ⚙️ 系統管理介面 (iOS Settings Card) -->
+        <div class="mb-5 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div onclick="toggleMgmt()" class="p-4 bg-slate-50/80 flex justify-between items-center cursor-pointer active:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="bg-slate-800 text-white p-1.5 rounded-lg shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></div>
+                    <h3 class="text-[13px] font-black text-slate-700 tracking-wider">系統控制中心</h3>
+                </div>
+                <span id="mgmtIcon" class="text-slate-400 text-[14px] font-bold transition-transform duration-300">▼</span>
             </div>
             
-            <div id="mgmtBody" class="collapsed mt-3">
-                <div class="flex flex-col gap-2">
-                    <div class="grid grid-cols-2 gap-2">
-                        <label class="flex flex-col items-center justify-center bg-emerald-50 text-emerald-700 py-3 rounded-xl border border-emerald-100 cursor-pointer active:bg-emerald-100">
-                            <span class="text-[11px] font-bold">📂 P 倉</span>
-                            <span id="pLabel" class="text-[9px] opacity-60">未載入</span>
+            <div id="mgmtBody" class="collapsed bg-white">
+                <div class="p-4 space-y-4">
+                    
+                    <button onclick="updateCloudMaster(true)" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 rounded-xl font-bold text-[13px] active:scale-[0.98] transition-all flex justify-center items-center gap-2 shadow-md shadow-blue-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                        從雲端更新最新藥單
+                    </button>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="relative flex flex-col items-center justify-center bg-slate-50 text-slate-700 py-4 rounded-xl border border-slate-200 cursor-pointer active:bg-slate-100 active:scale-[0.98] transition-all hover:border-emerald-300">
+                            <span class="text-2xl mb-1 drop-shadow-sm">📦</span>
+                            <span class="text-[12px] font-black">P 倉存量</span>
+                            <span id="pLabel" class="text-[9px] text-slate-500 mt-1.5 bg-white px-2.5 py-0.5 rounded-full border border-slate-200 shadow-sm font-bold tracking-wide">未載入</span>
                             <input type="file" id="pExcel" accept=".xlsx, .xls" class="hidden" onchange="processExcel(this, 'p')">
                         </label>
-                        <label class="flex flex-col items-center justify-center bg-purple-50 text-purple-700 py-3 rounded-xl border border-purple-100 cursor-pointer active:bg-purple-100">
-                            <span class="text-[11px] font-bold">📂 Main 倉</span>
-                            <span id="mLabel" class="text-[9px] opacity-60">未載入</span>
+                        <label class="relative flex flex-col items-center justify-center bg-slate-50 text-slate-700 py-4 rounded-xl border border-slate-200 cursor-pointer active:bg-slate-100 active:scale-[0.98] transition-all hover:border-purple-300">
+                            <span class="text-2xl mb-1 drop-shadow-sm">🏥</span>
+                            <span class="text-[12px] font-black">Main 倉存量</span>
+                            <span id="mLabel" class="text-[9px] text-slate-500 mt-1.5 bg-white px-2.5 py-0.5 rounded-full border border-slate-200 shadow-sm font-bold tracking-wide">未載入</span>
                             <input type="file" id="mExcel" accept=".xlsx, .xls" class="hidden" onchange="processExcel(this, 'm')">
                         </label>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="exportExcel()" class="bg-green-700 text-white py-3 rounded-xl font-bold text-xs active:bg-green-800">📊 匯出 Excel</button>
-                        <button onclick="confirmClearAll()" class="bg-red-50 text-red-500 border border-red-200 py-3 rounded-xl font-bold text-xs active:bg-red-100">🗑️ 全清空</button>
-                        <button onclick="confirmClearDelivery()" class="bg-orange-50 text-orange-600 border border-orange-200 py-3 rounded-xl font-bold text-xs active:bg-orange-100">🧹 清空出貨</button>
-                        <button onclick="confirmClearPending()" class="bg-yellow-50 text-yellow-700 border border-yellow-200 py-3 rounded-xl font-bold text-xs active:bg-yellow-100">⏳ 清空待查</button>
+
+                    <hr class="border-slate-100">
+
+                    <div class="space-y-3">
+                        <button onclick="exportExcel()" class="w-full bg-[#10b981] text-white py-3.5 rounded-xl font-bold text-[14px] active:bg-[#059669] active:scale-[0.98] transition-all flex justify-center items-center gap-2 shadow-md shadow-emerald-200 tracking-wide">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            匯出 Excel 報告
+                        </button>
+                        
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="confirmClearDelivery()" class="bg-white text-slate-600 border border-slate-200 py-2.5 rounded-xl font-bold text-[11px] active:bg-slate-50 active:scale-[0.95] transition-all flex flex-col items-center justify-center gap-1 shadow-sm">
+                                <span class="text-sm">🧹</span> 清出貨
+                            </button>
+                            <button onclick="confirmClearPending()" class="bg-white text-slate-600 border border-slate-200 py-2.5 rounded-xl font-bold text-[11px] active:bg-slate-50 active:scale-[0.95] transition-all flex flex-col items-center justify-center gap-1 shadow-sm">
+                                <span class="text-sm">🔍</span> 清待查
+                            </button>
+                            <button onclick="confirmClearAll()" class="bg-red-50 text-red-600 border border-red-200 py-2.5 rounded-xl font-black text-[11px] active:bg-red-100 active:scale-[0.95] transition-all flex flex-col items-center justify-center gap-1 shadow-sm">
+                                <span class="text-sm">🗑️</span> 全清空
+                            </button>
+                        </div>
                     </div>
-                    <!-- 💡 新增的雲端同步按鈕 -->
-                    <button onclick="updateCloudMaster(true)" class="bg-blue-50 text-blue-600 border border-blue-200 py-3 rounded-xl font-bold text-xs active:bg-blue-100 flex justify-center items-center gap-2">
-                        <span class="text-base">☁️</span> 更新雲端藥單 (同步 Google Sheet)
+                </div>
+            </div>
+        </div>
+
+        <!-- 🏷️ Segmented Control 導航 (流線型) -->
+        <div class="flex gap-1 p-1.5 bg-slate-200/80 rounded-2xl mb-5 shadow-inner">
+            <div id="tab-L2PM" class="flex-1 py-2.5 text-[12px] font-black rounded-xl text-slate-500 text-center transition-all duration-300">📦 L2PM</div>
+            <div id="tab-C" class="flex-1 py-2.5 text-[12px] font-black rounded-xl text-slate-500 text-center transition-all duration-300">❄️ 雪貨</div>
+            <div id="tab-SFI" class="flex-1 py-2.5 text-[12px] font-black rounded-xl text-slate-500 text-center transition-all duration-300">💰 SFI</div>
+        </div>
+
+        <!-- 🔎 核心掃描與操作區 -->
+        <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 mb-5 relative overflow-hidden">
+            <!-- 背景裝飾 -->
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-60"></div>
+            
+            <div class="relative flex items-center mb-4">
+                <input type="text" id="drugId" oninput="handleIdInput()" 
+                       placeholder="掃描條碼或手動輸入" 
+                       class="w-full p-3.5 border-2 border-slate-200 rounded-2xl text-[20px] focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none uppercase font-black text-center transition-all placeholder:text-slate-300 placeholder:font-normal bg-slate-50 focus:bg-white">
+                
+                <button onclick="clearItemCode()" 
+                        id="clearIdBtn"
+                        type="button"
+                        class="absolute right-3 p-2 text-slate-400 hover:text-slate-600 hidden active:scale-90 transition-transform bg-slate-100 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                </button>
+            </div>
+            
+            <div id="drugInfoBox" class="p-4 rounded-2xl mb-4 transition-all bg-slate-50 border-2 border-dashed border-slate-200 min-h-[130px] flex items-center justify-center relative">
+                <div id="drugInfoContent" class="w-full flex flex-col items-center justify-center">
+                    <div class="flex flex-col items-center gap-2 opacity-40">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                        <span class="text-xs font-bold text-slate-500 tracking-wide uppercase">等待掃描信號...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex flex-col gap-3 relative">
+                <input type="text" id="qty" readonly onclick="openKeypad('main')" placeholder="數量 QTY" class="w-full p-4 border-2 border-slate-200 rounded-2xl text-2xl outline-none font-black text-center bg-blue-50 text-blue-700 placeholder:text-blue-200 cursor-pointer shadow-inner">
+                <div class="flex gap-2">
+                    <button onclick="addEntry('pending')" class="w-[30%] bg-amber-400 text-white py-4 rounded-2xl font-bold text-2xl active:bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-200 active:scale-[0.98] transition-transform">🔍</button>
+                    <button onclick="addEntry('delivery')" class="w-[70%] bg-slate-800 text-white py-4 rounded-2xl font-black text-lg active:bg-slate-900 shadow-lg shadow-slate-300 active:scale-[0.98] transition-transform tracking-wide">
+                        📥
                     </button>
                 </div>
             </div>
+            <div id="mainStockWarning" class="hidden mt-3 text-center text-[12px] font-black text-red-500 bg-red-50 py-1.5 rounded-lg border border-red-100">⚠️ 注意：Main 倉存量不足！</div>
         </div>
 
- <div class="flex gap-2 mb-3 bg-[#f4f7f6] py-2 w-full no-scrollbar overflow-x-auto">
-    <div id="tab-L2PM" class="flex-1 py-3 text-[11px] font-black rounded-xl bg-gray-200 text-gray-400 text-center transition-all shadow-sm">📦 L2PM</div>
-    <div id="tab-C" class="flex-1 py-3 text-[11px] font-black rounded-xl bg-gray-200 text-gray-400 text-center transition-all shadow-sm">❄️ 雪貨</div>
-    <div id="tab-SFI" class="flex-1 py-3 text-[11px] font-black rounded-xl bg-gray-200 text-gray-400 text-center transition-all shadow-sm">💰 SFI</div>
-        </div>
-
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
-    <div class="relative flex items-center mb-3">
-        <input type="text" id="drugId" oninput="handleIdInput()" 
-               placeholder="入 Code 或掃描" 
-               class="w-full p-3 border-2 border-gray-100 rounded-xl text-xl focus:border-blue-400 outline-none uppercase font-black text-center">
-        
-        <button onclick="clearItemCode()" 
-                id="clearIdBtn"
-                type="button"
-                class="absolute right-3 p-2 text-gray-400 hover:text-gray-600 hidden">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-        </button>
-    </div>
+        <!-- 📑 清單數據區 -->
+        <div id="listsContainer" class="space-y-5">
             
-            <div id="drugInfoBox" class="p-3 rounded-2xl mb-4 transition-all bg-gray-50 border-t-4 border-gray-200 shadow-inner min-h-[120px] flex items-center justify-center overflow-hidden">
-                <div id="drugInfoContent" class="w-full flex flex-col items-center justify-center">
-                    <div class="opacity-40 text-xs italic text-gray-400">等待輸入...</div>
+            <!-- 🚨 觀察清單 -->
+            <div class="bg-white rounded-3xl shadow-sm border border-red-200 overflow-hidden relative">
+                <div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+                <div class="p-3 bg-red-50/50 border-b border-red-100">
+                    <div class="flex items-center gap-2 font-black text-red-700 pl-2">
+                        <span class="text-lg">🚨</span> 智能觀察清單 
+                        <span id="count-watch" class="ml-auto bg-red-500 text-white px-2.5 py-0.5 rounded-full text-[11px] shadow-sm">0</span>
+                    </div>
+                    <div class="flex flex-col gap-2 mt-3 pl-2">
+                        <div class="flex gap-1.5 items-center bg-white p-1.5 rounded-xl border border-red-100 shadow-sm">
+                            <span class="text-[9px] font-bold text-red-400 px-1 shrink-0 uppercase tracking-widest">比例</span>
+                            <button onclick="setThreshold(0.1)" id="btn-t-0.1" class="flex-1 py-1.5 text-[11px] rounded-lg bg-slate-50 text-slate-500 font-bold transition-all">0.1</button>
+                            <button onclick="setThreshold(0.4)" id="btn-t-0.4" class="flex-1 py-1.5 text-[11px] rounded-lg bg-slate-50 text-slate-500 font-bold transition-all">0.4</button>
+                            <button onclick="setThreshold(0.5)" id="btn-t-0.5" class="flex-1 py-1.5 text-[11px] rounded-lg bg-slate-50 text-slate-500 font-bold transition-all">0.5</button>
+                            <button onclick="setThreshold(0.7)" id="btn-t-0.7" class="flex-1 py-1.5 text-[11px] rounded-lg bg-slate-50 text-slate-500 font-bold transition-all">0.7</button>
+                        </div>
+                        <div class="flex gap-1.5 items-center bg-white p-1.5 rounded-xl border border-red-100 shadow-sm">
+                            <span class="text-[9px] font-bold text-red-400 px-1 shrink-0 uppercase tracking-widest">強選</span>
+                            <button onclick="setThreshold('ALL_C')" id="btn-t-ALL_C" class="flex-1 py-1.5 text-[11px] rounded-lg bg-slate-50 text-slate-500 font-bold transition-all">❄️ 全雪貨</button>
+                            <button onclick="setThreshold('ALL_SFI')" id="btn-t-ALL_SFI" class="flex-1 py-1.5 text-[11px] rounded-lg bg-slate-50 text-slate-50 text-slate-500 font-bold tra00 font-bold transition-all">💰 全SFI</button>
+                        </div>
+                    </div>
+                </div>
+
+                <table class="w-full text-left border-collapse table-fixed" id="table-watch">
+                    <tbody class="divide-y divide-red-50 text-[12px] bg-white"></tbody>
+                </table>
+
+                <div id="watch-expand-container" class="hidden p-3 text-center border-t border-red-50 bg-red-50/30">
+                    <button onclick="toggleWatchlist()" class="text-[11px] font-bold text-red-600 py-2 px-6 bg-white border border-red-200 shadow-sm rounded-full active:bg-red-50 active:scale-95 transition-all">
+                        <span id="watch-expand-text">展開全部 ▽</span>
+                    </button>
                 </div>
             </div>
             
-            <div class="flex flex-col gap-2">
-                <input type="text" id="qty" readonly onclick="openKeypad('main')" placeholder="數量" class="w-full p-4 border-2 border-gray-100 rounded-xl text-2xl outline-none focus:border-blue-400 font-black text-center bg-blue-50/20">
-                <div class="flex gap-2">
-                    <button onclick="addEntry('pending')" class="w-1/4 bg-yellow-500 text-white py-4 rounded-2xl font-bold text-2xl active:bg-yellow-600 flex items-center justify-center shadow-md">🔍</button>
-                    <button onclick="addEntry('delivery')" class="w-3/4 py-4 bg-[#333] text-white rounded-2xl font-bold text-lg active:bg-black shadow-lg">加入出貨清單</button>
+            <!-- 📋 出貨清單 -->
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden relative">
+                <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                <div class="p-3.5 bg-slate-50 border-b border-slate-100 font-black text-slate-700 flex items-center gap-2 pl-4">
+                    <span class="text-lg">📋</span> 出貨清單 
+                    <span id="count-delivery" class="ml-auto bg-slate-800 text-white px-2.5 py-0.5 rounded-full text-[11px] shadow-sm">0</span>
+                </div>
+                <table class="w-full text-left border-collapse table-fixed" id="table-delivery"><tbody class="divide-y divide-slate-100 text-[12px]"></tbody></table>
+                <div id="delivery-expand-btn" class="hidden p-3 text-center border-t border-slate-50 bg-slate-50/50">
+                    <button onclick="toggleExpand('delivery')" id="btn-expand-delivery" class="text-[11px] font-bold text-blue-600 bg-white shadow-sm py-2 px-6 border border-slate-200 rounded-full active:scale-95 transition-all">展開全部 ▽</button>
                 </div>
             </div>
-            <div id="mainStockWarning" class="hidden mt-2 text-center text-[11px] font-black text-red-600">⚠️ Main 倉存量不足！</div>
-        </div>
 
-        <div id="listsContainer">
-<div class="bg-red-50 rounded-2xl shadow-sm overflow-hidden mb-5 border border-red-200">
-    <div class="p-3 bg-red-600 text-white font-bold">
-        <div class="flex items-center gap-2 text-xs mb-2">
-            🚨 觀察清單 
-            <span id="count-watch" class="ml-auto bg-white text-red-600 px-2.5 py-0.5 rounded-full text-[10px]">0</span>
-        </div>
-        <div class="flex flex-col gap-2 bg-red-700/40 p-2 rounded-xl">
-            <div class="flex gap-1 items-center">
-                <span class="text-[9px] text-red-100 px-1 shrink-0">比例:</span>
-                <button onclick="setThreshold(0.1)" id="btn-t-0.1" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">0.1</button>
-                <button onclick="setThreshold(0.4)" id="btn-t-0.4" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">0.4</button>
-                <button onclick="setThreshold(0.5)" id="btn-t-0.5" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">0.5</button>
-                <button onclick="setThreshold(0.7)" id="btn-t-0.7" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">0.7</button>
-            </div>
-            <div class="flex gap-1 items-center">
-                <span class="text-[9px] text-red-100 px-1 shrink-0">類別:</span>
-                <button onclick="setThreshold('ALL_C')" id="btn-t-ALL_C" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">全部雪貨</button>
-                <button onclick="setThreshold('ALL_SFI')" id="btn-t-ALL_SFI" class="flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white">全部 SFI</button>
-            </div>
-        </div>
-    </div>
-
-<table class="w-full text-left border-collapse table-fixed" id="table-watch">
-        <tbody class="divide-y divide-red-100 text-[12px]"></tbody>
-    </table>
-
-    <div id="watch-expand-container" class="hidden p-2 text-center border-t border-red-100 bg-white">
-        <button onclick="toggleWatchlist()" class="text-[10px] font-bold text-red-600 py-2 px-6 border border-red-200 rounded-full active:bg-red-50">
-            <span id="watch-expand-text">展開全部 ▽</span>
-        </button>
-    </div>
-</div>
-            <div class="bg-white rounded-2xl shadow-sm overflow-hidden mb-5 border border-gray-100">
-                <div class="p-3 bg-gray-800 text-white font-bold flex items-center gap-2 text-xs">📋 出貨清單 <span id="count-delivery" class="ml-auto bg-white text-gray-800 px-2.5 py-0.5 rounded-full text-[10px]">0</span></div>
-                <table class="w-full text-left border-collapse table-fixed" id="table-delivery"><tbody class="divide-y divide-gray-50 text-[12px]"></tbody></table>
-                <div id="delivery-expand-btn" class="hidden p-2 text-center border-t border-gray-50"><button onclick="toggleExpand('delivery')" id="btn-expand-delivery" class="text-[10px] font-bold text-blue-500 py-1.5 px-5 border border-blue-200 rounded-full">展開全部 ▽</button></div>
+            <!-- 🔍 待查機清單 -->
+            <div class="bg-white rounded-3xl shadow-sm border border-amber-200 overflow-hidden relative">
+                <div class="absolute top-0 left-0 w-1 h-full bg-amber-400"></div>
+                <div class="p-3.5 bg-amber-50/50 border-b border-amber-100 font-black text-amber-700 flex items-center gap-2 pl-4">
+                    <span class="text-lg">🔍</span> 待查機清單 
+                    <span id="count-pending" class="ml-auto bg-amber-500 text-white px-2.5 py-0.5 rounded-full text-[11px] shadow-sm">0</span>
+                </div>
+                <table class="w-full text-left border-collapse table-fixed" id="table-pending"><tbody class="divide-y divide-amber-50 text-[12px]"></tbody></table>
+                <div id="pending-expand-btn" class="hidden p-3 text-center border-t border-amber-50 bg-amber-50/30">
+                    <button onclick="toggleExpand('pending')" id="btn-expand-pending" class="text-[11px] font-bold text-amber-700 bg-white shadow-sm py-2 px-6 border border-amber-200 rounded-full active:scale-95 transition-all">展開全部 ▽</button>
+                </div>
             </div>
 
-            <div class="bg-yellow-50 rounded-2xl shadow-sm overflow-hidden mb-5 border border-yellow-200">
-                <div class="p-3 bg-yellow-500 text-white font-bold flex items-center gap-2 text-xs">⏳ 待查機清單 <span id="count-pending" class="ml-auto bg-white text-yellow-500 px-2.5 py-0.5 rounded-full text-[10px]">0</span></div>
-                <table class="w-full text-left border-collapse table-fixed" id="table-pending"><tbody class="divide-y divide-yellow-100 text-[12px]"></tbody></table>
-                <div id="pending-expand-btn" class="hidden p-2 text-center border-t border-yellow-100"><button onclick="toggleExpand('pending')" id="btn-expand-pending" class="text-[10px] font-bold text-yellow-600 py-1.5 px-5 border border-yellow-300 rounded-full">展開全部 ▽</button></div>
-            </div>
         </div>
     </div>
     
+    <!-- 🟢 JavaScript 邏輯 -->
     <script>
-        // 🚨 填入你發佈成 CSV 嘅 Google Sheet 連結
         const CLOUD_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS3lVUR7qTqE8gKKNHIPemXDNVmji9dBzs3POa3CZX4aXhspqJLAoNAqXwQt_g3-XLqtNOejRqWV1W_/pub?output=csv"; 
 
         let currentPS = 0; 
         let isWatchlistExpanded = false;
         
-        // 🚨 雲端化：加入本地快取 (Cache)，如果冇上過網/未入 Link，就用以下預設資料
         let defaultMaster = {
             "C": { "FILG04": ["FILGRASTIM (NIVESTIM) PREFILLED SYRINGE 30MU (300MCG)/0.5ML", "C1.A.1", "900"] },
             "L2PM": { "ABAC01": ["ABACAVIR (SULPHATE) TABLET 300MG", "F4A.2", "0"] },
@@ -291,7 +365,7 @@
         };
         let drugMaster = JSON.parse(localStorage.getItem('drugMasterCache')) || defaultMaster;
 
-        const catColors = { "C": "#007bff", "L2PM": "#28a745", "SFI": "#fd7e14" };
+        const catColors = { "C": "#3b82f6", "L2PM": "#10b981", "SFI": "#f59e0b" };
         const catIcons = { "C": "❄️", "L2PM": "📦", "SFI": "💰" };
         const catOrder = { "C": 1, "L2PM": 2, "SFI": 3 };
         let records = [], pInventory = {}, mInventory = {}, excludedWatch = new Set();
@@ -319,6 +393,18 @@
         document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'hidden') save(); });
         window.addEventListener('pagehide', function() { save(); });
 
+        document.addEventListener('keydown', function(e) {
+            const inputEl = document.getElementById('drugId');
+            const keypad = document.getElementById('numKeypad');
+            const isInputTarget = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
+            
+            if (keypad.classList.contains('show') || e.ctrlKey || e.altKey || e.metaKey) return;
+            
+            if (!isInputTarget && e.key.length === 1 && /[a-zA-Z0-9_-]/.test(e.key)) {
+                inputEl.focus();
+            }
+        });
+
         window.onload = function() {
             const saved = localStorage.getItem('pWarehouseData') || localStorage.getItem('p_store_stable_v3');
             if (saved) {
@@ -336,26 +422,25 @@
             renderTables();
             setCat(null); 
             
-            // 嘗試在背景靜默更新雲端藥單
             updateCloudMaster(false);
+
+            document.getElementById('drugId').focus();
 
             document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
 
-            // PDA 實體掃描槍支援
             document.getElementById('drugId').addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     handleIdInput();
                     if (this.value.trim() !== '' && !getDrugInfo(this.value)) {
                         showAlert("⚠️ 找不到對應的藥物代碼");
-                        if(navigator.vibrate) navigator.vibrate([200, 100, 200]); // 加入小震動提示錯誤
+                        if(navigator.vibrate) navigator.vibrate([200, 100, 200]); 
                     }
-                    this.blur();
+                    this.blur(); 
                 }
             });
         };
 
-        // 💡 雲端同步核心功能
         function updateCloudMaster(showMsg = false) {
             if (!CLOUD_CSV_URL) {
                 if(showMsg) showAlert("⚠️ 請先在程式碼最頂端填寫 Google Sheet 的 CLOUD_CSV_URL");
@@ -371,7 +456,6 @@
                     
                     let newMaster = { "C": {}, "L2PM": {}, "SFI": {} };
                     
-                    // 假設 Google Sheet 欄位：0:Item Code, 1:類別(C/L2PM/SFI), 2:藥名, 3:位置, 4:月用量, 5:包裝數
                     for (let i = 1; i < rows.length; i++) {
                         const row = rows[i];
                         if (!row[0]) continue; 
@@ -499,7 +583,11 @@
                 }
             }
             
-            watchList.sort((a, b) => (catOrder[a.cat] - catOrder[b.cat]) || (getLocatorWeight(a.cat, a.locator) - getLocatorWeight(b.cat, b.locator)));
+            watchList.sort((a, b) => 
+                (catOrder[a.cat] - catOrder[b.cat]) || 
+                (getLocatorWeight(a.cat, a.locator) - getLocatorWeight(b.cat, b.locator)) ||
+                a.locator.localeCompare(b.locator)
+            );
 
             requestAnimationFrame(() => {
                 ['delivery', 'pending', 'watch'].forEach(t => {
@@ -533,45 +621,61 @@
                         const usage = r.usage || (r.monthly) || '0', isS = isInventoryLoaded && parseFloat(r.qty) > parseFloat(mS);
                         
                         if (t === 'watch') {
-                            const ratioTag = `<span class="bg-red-100 text-red-600 px-1 rounded font-bold ml-1 text-[9px]">${r.ratio}x</span>`;
-                            return `<tr class="bg-white/40">
-                                <td class="p-2 text-center w-8">${catIcons[r.cat]}</td>
-                                <td class="p-2">
-                                    <div class="font-bold leading-tight text-gray-800 mb-1 text-[12px]">${r.name}</div>
-                                    <div class="flex flex-col gap-1">
-                                        <div class="flex items-center gap-1">
-                                            <span class="item-code-badge">${r.id}</span>
-                                            <span class="watch-locator-badge">📍 ${r.locator}</span>
+                            const ratioTag = `<span class="bg-red-100 text-red-600 px-1.5 py-0.5 rounded-md font-bold ml-1 text-[10px] border border-red-200">${r.ratio}x</span>`;
+                            return `<tr class="hover:bg-red-50/50 transition-colors">
+                                <td class="p-3 text-center w-10 text-lg">${catIcons[r.cat]}</td>
+                                <td class="p-3">
+                                    <div class="font-black leading-tight text-slate-700 mb-2 text-[13px] pr-2">${r.name}</div>
+                                    <div class="flex flex-col gap-1.5">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="item-code-badge shadow-sm">${r.id}</span>
+                                            <span class="watch-locator-badge shadow-sm">📍 ${r.locator}</span>
                                         </div>
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <span class="text-[9px] font-bold text-blue-700">📊 ${usage}</span>
-                                            <span class="text-[9px] font-bold text-emerald-600">🗑️ ${pS}</span>
-                                            <span class="text-[9px] font-bold text-purple-600">🏥 ${mS}</span>
-                                            ${ratioTag}${isS ? '<span class="text-red-600 font-black text-[9px]">!缺</span>' : ''}
+                                        <div class="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                            <span class="bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-bold">📊 ${usage}</span>
+                                            <span class="bg-emerald-50 border border-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded text-[10px] font-bold">🗑️ ${pS}</span>
+                                            <span class="bg-purple-50 border border-purple-100 text-purple-600 px-1.5 py-0.5 rounded text-[10px] font-bold">🏥 ${mS}</span>
+                                            ${ratioTag}${isS ? '<span class="text-white bg-red-500 px-1.5 py-0.5 rounded shadow-sm font-black text-[9px] ml-1">!缺</span>' : ''}
                                         </div>
                                     </div>
                                 </td>
-                                <td class="p-2 text-right w-44"> <div class="flex gap-1 justify-end items-center">
-                                        <input type="text" id="watch-qty-${cid}" readonly onclick="openKeypad('watch-qty-${cid}')" placeholder="0" class="w-10 h-7 text-center font-bold bg-white border border-red-200 rounded text-[10px] outline-none">
-                                        <button onclick="addEntry('delivery','${r.id}', document.getElementById('watch-qty-${cid}').value)" class="bg-red-500 text-white px-2 h-7 rounded text-[9px] font-bold active:bg-red-300">出貨</button>
-                                        <button onclick="addEntry('pending','${r.id}', 0)" class="bg-yellow-500 text-white px-2 h-7 rounded text-[9px] font-bold active:bg-yellow-600 ml-1">⏳ </button>
-                                        <button onclick="delWatch('${r.id}')" class="text-gray-500 ml-1"><i class="icon-trash"></i></button>
+                                <td class="p-2 text-right w-40 align-bottom pb-3 pr-3"> 
+                                    <div class="flex gap-1.5 justify-end items-center">
+                                        <input type="text" id="watch-qty-${cid}" readonly onclick="openKeypad('watch-qty-${cid}')" placeholder="0" class="w-12 h-9 text-center font-black text-blue-700 bg-white border-2 border-slate-200 rounded-lg text-[13px] outline-none shadow-inner cursor-pointer focus:border-blue-400">
+                                        <button onclick="addEntry('delivery','${r.id}', document.getElementById('watch-qty-${cid}').value)" class="bg-red-500 text-white px-2 h-9 rounded-lg text-[11px] font-black active:scale-90 transition-transform shadow-sm">出貨</button>
+                                        <button onclick="addEntry('pending','${r.id}', 0)" class="bg-amber-400 text-white px-2 h-9 rounded-lg text-[12px] font-black active:scale-90 transition-transform shadow-sm">🔍</button>
+                                        <button onclick="delWatch('${r.id}')" class="text-slate-300 hover:text-red-400 active:scale-90 transition-all p-1.5"><i class="icon-trash"></i></button>
                                     </div>
                                 </td>
                             </tr>`;
                         }
-                        return `<tr><td class="p-2 text-center w-8">${catIcons[r.cat]}</td><td class="p-2"><div class="font-bold text-[12px] leading-tight text-gray-800 mb-1">${r.name}</div><div class="flex items-center gap-2"><span class="item-code-badge">${r.id}</span><div class="flex flex-wrap gap-2 text-[8px] font-bold"><span class="text-blue-500">📍 ${r.locator}</span><span class="text-blue-700">📊 ${usage}</span><span class="text-emerald-600">🗑️ ${pS}</span><span class="text-purple-600">🏥 ${mS}</span>${isS ? '<span class="text-red-500 font-black">!缺</span>' : ''}</div></div></td><td class="p-2 w-16"><input type="text" readonly onclick="openKeypad(${r.ts})" value="${r.qty}" class="w-full text-center font-bold bg-white border border-gray-200 rounded-lg ${isS ? 'text-red-600 border-red-200' : ''}"></td><td class="p-2 text-center w-10"><div class="flex flex-col items-center gap-2">${t === 'pending' ? `<button onclick="move(${r.ts})" class="text-green-600"><i class="icon-check"></i></button>` : ''}<button onclick="delEntry(${r.ts})" class="text-red-300"><i class="icon-trash"></i></button></div></td></tr>`;
+                        return `<tr class="hover:bg-slate-50 transition-colors"><td class="p-3 text-center w-10 text-lg">${catIcons[r.cat]}</td><td class="p-3"><div class="font-black text-[13px] leading-tight text-slate-700 mb-2">${r.name}</div><div class="flex items-center gap-2"><span class="item-code-badge">${r.id}</span><div class="flex flex-wrap gap-1.5 text-[9px] font-bold"><span class="bg-blue-50 border border-blue-100 text-blue-600 px-1.5 py-0.5 rounded">📍 ${r.locator}</span><span class="bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded">📊 ${usage}</span><span class="bg-emerald-50 border border-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded">🗑️ ${pS}</span><span class="bg-purple-50 border border-purple-100 text-purple-600 px-1.5 py-0.5 rounded">🏥 ${mS}</span>${isS ? '<span class="text-white bg-red-500 px-1.5 py-0.5 rounded shadow-sm">!缺</span>' : ''}</div></div></td><td class="p-2 w-20 align-middle"><input type="text" readonly onclick="openKeypad(${r.ts})" value="${r.qty}" class="w-full text-center font-black bg-white border-2 border-slate-200 rounded-xl py-2 text-[14px] cursor-pointer shadow-sm ${isS ? 'text-red-600 border-red-300 bg-red-50' : 'text-blue-700'}"></td><td class="p-2 text-center w-12"><div class="flex flex-col items-center gap-3">${t === 'pending' ? `<button onclick="move(${r.ts})" class="text-emerald-500 hover:text-emerald-600 active:scale-90 transition-transform"><i class="icon-check w-6 h-6"></i></button>` : ''}<button onclick="delEntry(${r.ts})" class="text-slate-300 hover:text-red-400 active:scale-90 transition-transform"><i class="icon-trash w-5 h-5"></i></button></div></td></tr>`;
                     }).join('');
                     
-                    tbody.innerHTML = htmlRows || `<tr><td colspan="4" class="p-4 text-center text-gray-300 text-[10px] italic">目前無項目</td></tr>`;
+                    tbody.innerHTML = htmlRows || `<tr><td colspan="4" class="p-6 text-center text-slate-400 font-bold text-[12px] tracking-wide bg-slate-50/50">目前無項目</td></tr>`;
                 });
             });
         }
 
         function getLocatorWeight(cat, locator) {
             const loc = (locator || "").toUpperCase();
-            if (cat === 'C') { if (loc.startsWith('R8')) return 10; if (loc.startsWith('R1')) return 20; if (loc.startsWith('R2')) return 30; if (loc.startsWith('R3')) return 40; if (loc.startsWith('C')) return 50; }
-            else if (cat === 'SFI') { if (/^[A-G]/.test(loc)) return 10; if (loc.startsWith('M')) return 20; if (loc.startsWith('R7')) return 30; if (loc.startsWith('R6')) return 40; if (loc.startsWith('R9')) return 50; }
+            if (cat === 'C') { 
+                if (loc.startsWith('C')) return 10; 
+                if (loc.startsWith('R3')) return 20; 
+                if (loc.startsWith('R2')) return 30; 
+                if (loc.startsWith('R1')) return 40; 
+                if (loc.startsWith('R8')) return 50; 
+            }
+            else if (cat === 'SFI') { 
+                if (/^[A-G]/.test(loc)) return 10; 
+                if (loc.startsWith('MG')) return 20; 
+                if (loc.startsWith('MH')) return 30; 
+                if (loc.startsWith('MJ')) return 40; 
+                if (loc.startsWith('MK')) return 50; 
+                if (loc.startsWith('R7')) return 60; 
+                if (loc.startsWith('R6')) return 70; 
+                if (loc.startsWith('R9')) return 80; 
+            }
             return 99;
         }
 
@@ -593,6 +697,14 @@
 
         function handleIdInput() {
             const inputEl = document.getElementById('drugId');
+            
+            let val = inputEl.value.trim();
+            if (val.length > 6) {
+                if (val.includes('_')) val = val.split('_')[0];
+                val = val.substring(0, 6);
+                inputEl.value = val;
+            }
+
             const clearBtn = document.getElementById('clearIdBtn');
             if (inputEl.value.length > 0) clearBtn.classList.remove('hidden'); else clearBtn.classList.add('hidden');
             const matched = getDrugInfo(inputEl.value);
@@ -602,8 +714,11 @@
 
         function clearItemCode() {
             const input = document.getElementById('drugId');
-            input.value = ""; input.focus(); document.getElementById('clearIdBtn').classList.add('hidden'); 
-            setCat(null); updateMatchedUI();             
+            input.value = ""; 
+            document.getElementById('clearIdBtn').classList.add('hidden'); 
+            setCat(null); 
+            updateMatchedUI();
+            input.focus(); 
         }
 
         function updateMatchedUI() {
@@ -612,9 +727,19 @@
             if (matched) {
                 const cid = cleanId(matched.originalId), p = pInventory[cid] ?? (isInventoryLoaded ? 0 : '--'), m = mInventory[cid] ?? (isInventoryLoaded ? 0 : '--');
                 const hasPack = matched.info.length > 3 && matched.info[3] !== "0", packText = hasPack ? matched.info[3].split(' ')[0] : "";
-                box.style.borderTopColor = catColors[matched.cat];
-                content.innerHTML = `<div class="w-full flex flex-col items-center animate-in fade-in duration-300"><div class="font-black text-[#1e40af] text-[18px] leading-tight text-center mb-3 w-full">${matched.info[0]}</div><div class="w-full space-y-2"><div class="grid ${hasPack ? 'grid-cols-2' : 'grid-cols-1'} gap-2 px-1">${hasPack ? `<div class="bg-white p-2 rounded-lg border border-gray-100 flex items-center justify-center gap-2"><span class="text-[12px]">📤</span><span class="text-[12px] font-black text-gray-500">${packText}</span></div>` : ''}<div class="bg-white p-2 rounded-lg border border-gray-100 flex items-center justify-center gap-2"><span class="text-[12px]">📍</span><span class="text-[14px] font-black text-blue-600">${matched.info[1]}</span></div></div><div class="grid grid-cols-3 gap-2 px-1"><div class="bg-blue-50/50 p-2 rounded-lg border border-blue-100 flex flex-col items-center"><span class="text-[10px] text-blue-500 font-bold">📊 用量</span><span class="text-[18px] font-black text-blue-700">${matched.info[2]}</span></div><div class="bg-white p-2 rounded-lg border border-gray-100 flex flex-col items-center"><span class="text-[10px] text-gray-400 font-bold">🗑️ P倉</span><span class="text-[18px] font-black text-emerald-600">${p}</span></div><div class="bg-white p-2 rounded-lg border border-gray-100 flex flex-col items-center"><span class="text-[10px] text-gray-400 font-bold">🏥 Main</span><span class="text-[18px] font-black text-purple-600">${m}</span></div></div></div></div>`;
-            } else { box.style.borderTopColor = "#e5e7eb"; content.innerHTML = `<div class="opacity-40 italic text-[11px] text-gray-400">${idInput ? '⚠️ 找不到藥物' : '等待輸入代碼...'}</div>`; }
+                
+                let borderColorClass = "";
+                if (matched.cat === 'C') borderColorClass = "border-blue-500 bg-blue-50/30";
+                else if (matched.cat === 'L2PM') borderColorClass = "border-emerald-500 bg-emerald-50/30";
+                else if (matched.cat === 'SFI') borderColorClass = "border-amber-500 bg-amber-50/30";
+
+                box.className = `p-4 rounded-2xl mb-4 transition-all border-2 ${borderColorClass} min-h-[130px] flex items-center justify-center relative shadow-sm`;
+
+                content.innerHTML = `<div class="w-full flex flex-col items-center animate-in fade-in duration-300"><div class="font-black text-slate-800 text-[18px] leading-tight text-center mb-3 w-full">${matched.info[0]}</div><div class="w-full space-y-2"><div class="grid ${hasPack ? 'grid-cols-2' : 'grid-cols-1'} gap-2 px-1">${hasPack ? `<div class="bg-white p-2 rounded-xl border border-slate-200 flex items-center justify-center gap-2 shadow-sm"><span class="text-[14px]">📤</span><span class="text-[13px] font-black text-slate-600">${packText}</span></div>` : ''}<div class="bg-white p-2 rounded-xl border border-slate-200 flex items-center justify-center gap-2 shadow-sm"><span class="text-[14px]">📍</span><span class="text-[15px] font-black text-blue-600">${matched.info[1]}</span></div></div><div class="grid grid-cols-3 gap-2 px-1"><div class="bg-blue-50/80 p-2.5 rounded-xl border border-blue-100 flex flex-col items-center justify-center shadow-sm"><span class="text-[10px] text-blue-500 font-bold mb-0.5 uppercase tracking-wide">用量</span><span class="text-[20px] font-black text-blue-700 leading-none">${matched.info[2]}</span></div><div class="bg-white p-2.5 rounded-xl border border-slate-200 flex flex-col items-center justify-center shadow-sm"><span class="text-[10px] text-slate-400 font-bold mb-0.5 uppercase tracking-wide">P倉</span><span class="text-[20px] font-black text-emerald-600 leading-none">${p}</span></div><div class="bg-white p-2.5 rounded-xl border border-slate-200 flex flex-col items-center justify-center shadow-sm"><span class="text-[10px] text-slate-400 font-bold mb-0.5 uppercase tracking-wide">Main</span><span class="text-[20px] font-black text-purple-600 leading-none">${m}</span></div></div></div></div>`;
+            } else { 
+                box.className = `p-4 rounded-2xl mb-4 transition-all bg-slate-50 border-2 border-dashed border-slate-200 min-h-[130px] flex items-center justify-center relative`;
+                content.innerHTML = `<div class="flex flex-col items-center gap-2 opacity-40"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${idInput ? 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' : 'M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z'}" /></svg><span class="text-xs font-bold text-slate-500 tracking-wide uppercase">${idInput ? '找不到對應藥物' : '等待掃描信號...'}</span></div>`; 
+            }
         }
 
         function addEntry(type, customId = null, customQty = null) {
@@ -636,7 +761,13 @@
                 } else { records.unshift({ type, cat: matched ? matched.cat : currentCat, id: idToSave, name: matched ? matched.info[0] : "手動項目", locator: matched ? matched.info[1] : "--", usage: matched ? matched.info[2] : "0", qty: qtyVal, ts: Date.now() }); }
             } else { records.unshift({ type: 'pending', cat: matched ? matched.cat : currentCat, id: idToSave, name: matched ? matched.info[0] : "手動項目", locator: matched ? matched.info[1] : "--", usage: matched ? matched.info[2] : "0", qty: qtyVal || 0, ts: Date.now() }); }
 
-            if (!customId) { document.getElementById('drugId').value = ""; document.getElementById('qty').value = ""; setCat(null); updateMatchedUI(); }
+            if (!customId) { 
+                document.getElementById('drugId').value = ""; 
+                document.getElementById('qty').value = ""; 
+                setCat(null); 
+                updateMatchedUI(); 
+                document.getElementById('drugId').focus(); 
+            }
             renderTables(); save();
         }
 
@@ -660,9 +791,38 @@
 
         function updateQty(ts, val) { const r = records.find(i => i.ts === ts); if (r) { r.qty = val; renderTables(); save(); } }
         
-        function setCat(cat) { currentCat = cat; ['C', 'L2PM', 'SFI'].forEach(c => { const el = document.getElementById(`tab-${c}`); if (el) el.classList.toggle(`tab-active-${c}`, c === cat); }); }
+        function setCat(cat) { 
+            currentCat = cat; 
+            ['C', 'L2PM', 'SFI'].forEach(c => { 
+                const el = document.getElementById(`tab-${c}`); 
+                if (el) {
+                    if (c === cat) {
+                        el.classList.add(`tab-active-${c}`);
+                        el.classList.remove('text-slate-500');
+                    } else {
+                        el.classList.remove(`tab-active-${c}`);
+                        el.classList.add('text-slate-500');
+                    }
+                }
+            }); 
+        }
         
-        function setThreshold(val) { watchThreshold = val; [0.1, 0.4, 0.5, 0.7, 'ALL_C', 'ALL_SFI'].forEach(v => { const btn = document.getElementById(`btn-t-${v}`); if (btn) btn.className = v === val ? "flex-1 py-1.5 text-[10px] rounded-lg filter-btn-active" : "flex-1 py-1.5 text-[10px] rounded-lg bg-red-800/40 text-white"; }); renderTables(); save(); }
+        function setThreshold(val) { 
+            watchThreshold = val; 
+            [0.1, 0.4, 0.5, 0.7, 'ALL_C', 'ALL_SFI'].forEach(v => { 
+                const btn = document.getElementById(`btn-t-${v}`); 
+                if (btn) {
+                    if(v === val) {
+                        btn.classList.add('bg-white', 'text-red-600', 'shadow-sm', 'border', 'border-red-100');
+                        btn.classList.remove('bg-slate-50', 'text-slate-500');
+                    } else {
+                        btn.classList.remove('bg-white', 'text-red-600', 'shadow-sm', 'border', 'border-red-100');
+                        btn.classList.add('bg-slate-50', 'text-slate-500');
+                    }
+                }
+            }); 
+            renderTables(); save(); 
+        }
 
         function toggleExpand(type) { expandStates[type] = !expandStates[type]; renderTables(); }
 
@@ -672,7 +832,19 @@
 
         function closeAlert() { document.getElementById('customAlert').style.display = 'none'; if(!keypadTarget) document.getElementById('overlay').style.display = 'none'; }
         
-        function updateLabel(type) { const count = Object.keys(type === 'p' ? pInventory : mInventory).length; document.getElementById(type + 'Label').innerText = count > 0 ? `已載入 ${count} 項` : '未載入'; }
+        function updateLabel(type) { 
+            const count = Object.keys(type === 'p' ? pInventory : mInventory).length; 
+            const label = document.getElementById(type + 'Label');
+            if(count > 0) {
+                label.innerText = `✅ 載入 ${count} 項`;
+                label.classList.add('text-emerald-600', 'border-emerald-200');
+                label.classList.remove('text-slate-500', 'border-slate-200');
+            } else {
+                label.innerText = '未載入';
+                label.classList.remove('text-emerald-600', 'border-emerald-200');
+                label.classList.add('text-slate-500', 'border-slate-200');
+            }
+        }
         
         function confirmClearAll() { showAlert("⚠️ 注意：這將清空所有資料！", () => { records = []; pInventory = {}; mInventory = {}; excludedWatch = new Set(); isInventoryLoaded = false; updateLabel('p'); updateLabel('m'); renderTables(); save(); localStorage.clear(); }); }
         function confirmClearPending() { const pendingCount = records.filter(r => r.type === 'pending').length; if (pendingCount === 0) return showAlert("待查機清單是空的。"); showAlert(`⚠️ 確定要清空這 ${pendingCount} 項待查機紀錄嗎？`, () => { records = records.filter(r => r.type !== 'pending'); renderTables(); save(); }); }
@@ -684,10 +856,10 @@
             if (deliveryItems.length === 0 && pendingItems.length === 0) return showAlert("❌ 冇任何資料可以匯出 (出貨及待查清單均為空)");
 
             const now = new Date(), y = now.getFullYear(), m = now.getMonth() + 1, d = now.getDate();
-            const timeStr = now.toTimeString().split(' ')[0]; // 獲取時間 HH:MM:SS
+            const timeStr = now.toTimeString().split(' ')[0]; 
             const dateStr = `${y}/${m}/${d}`;
 
-            let wsData = [["", "", dateStr, timeStr]]; // 💡 匯出 Excel 增加時間戳
+            let wsData = [["", "", dateStr, timeStr]]; 
 
             if (deliveryItems.length > 0) {
                 wsData.push(["出貨 Item Code", "Qty"]);
