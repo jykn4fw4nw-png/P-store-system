@@ -644,7 +644,7 @@ function openKeypad(target, drugCode = null) {
                         const cid = cleanId(r.id), pS = pInventory[cid] ?? (isInventoryLoaded ? 0 : '--'), mS = mInventory[cid] ?? (isInventoryLoaded ? 0 : '--');
                         const usage = r.usage || (r.monthly) || '0', isS = isInventoryLoaded && parseFloat(r.qty) > parseFloat(mS);
                         
-if (t === 'watch') {
+                        if (t === 'watch') {
                             const ratioTag = `<span class="bg-red-100 text-red-600 px-1.5 py-0.5 rounded-md font-bold text-[10px] border border-red-200 shrink-0">${r.ratio}x</span>`;
                             return `<tr class="hover:bg-red-50/50 transition-colors">
                                 <td class="p-3 text-center w-10 text-lg">${catIcons[r.cat]}</td>
@@ -659,21 +659,24 @@ if (t === 'watch') {
                                         <div class="flex flex-wrap items-center gap-1.5 mt-0.5">
                                             <span class="bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-bold">📊 ${usage}</span>
                                             <span class="bg-emerald-50 border border-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded text-[10px] font-bold">🗑️ ${pS}</span>
+                                        </div>
+                                        <div class="flex flex-wrap items-center gap-1.5">
                                             <span class="bg-purple-50 border border-purple-100 text-purple-600 px-1.5 py-0.5 rounded text-[10px] font-bold">🏥 ${mS}</span>
-                                            ${isS ? '<span class="text-white bg-red-500 px-1.5 py-0.5 rounded shadow-sm font-black text-[9px] ml-1">!缺</span>' : ''}
+                                            ${isS ? '<span class="text-white bg-red-500 px-1.5 py-0.5 rounded shadow-sm font-black text-[9px]">!缺</span>' : ''}
                                         </div>
                                     </div>
                                 </td>
-                                <td class="p-2 text-right w-5 align-bottom pb-3 pr-3"> 
+                                <td class="p-2 text-right w-3 align-bottom pb-3 pr-3"> 
                                     <div class="flex gap-1.5 justify-end items-center">
-                                        <input type="text" id="watch-qty-${cid}" readonly onclick="openKeypad('watch-qty-${cid}', '${r.id}')" placeholder="0" class="w-12 h-9 text-center font-black text-blue-700 bg-white border-2 border-slate-200 rounded-lg text-[13px] outline-none shadow-inner cursor-pointer focus:border-blue-400">
-                                        <button onclick="addEntry('delivery','${r.id}', document.getElementById('watch-qty-${cid}').value)" class="bg-red-500 text-white px-2 h-9 rounded-lg text-[11px] font-black active:scale-90 transition-transform shadow-sm">出貨</button>
-                                        <button onclick="addEntry('pending','${r.id}', 0)" class="bg-amber-400 text-white px-2 h-9 rounded-lg text-[12px] font-black active:scale-90 transition-transform shadow-sm">🔍</button>
+                                        <input type="text" id="watch-qty-${cid}" readonly onclick="openKeypad('watch-qty-${cid}', '${r.id}')" placeholder="0" class="w-11 h-6 text-center font-black text-blue-700 bg-white border-2 border-slate-200 rounded-lg text-[13px] outline-none shadow-inner cursor-pointer focus:border-blue-400">
+                                        <button onclick="addEntry('delivery','${r.id}', document.getElementById('watch-qty-${cid}').value)" class="bg-red-500 text-white px-3 h-7 rounded-lg text-[10px] font-black active:scale-90 transition-transform shadow-sm">出貨</button>
+                                        <button onclick="addEntry('pending','${r.id}', 0)" class="bg-amber-400 text-white px-2 h-7 rounded-lg text-[12px] font-black active:scale-90 transition-transform shadow-sm">🔍</button>
                                         <button onclick="delWatch('${r.id}')" class="text-slate-300 hover:text-red-400 active:scale-90 transition-all p-1.5"><i class="icon-trash"></i></button>
                                     </div>
                                 </td>
                             </tr>`;
                         }
+
                         return `<tr class="hover:bg-slate-50 transition-colors"><td class="p-3 text-center w-10 text-lg">${catIcons[r.cat]}</td><td class="p-3"><div class="font-black text-[13px] leading-tight text-slate-700 mb-2">${r.name}</div><div class="flex items-center gap-2"><span class="item-code-badge">${r.id}</span><div class="flex flex-wrap gap-1.5 text-[9px] font-bold"><span class="bg-blue-50 border border-blue-100 text-blue-600 px-1.5 py-0.5 rounded">📍 ${r.locator}</span><span class="bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded">📊 ${usage}</span><span class="bg-emerald-50 border border-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded">🗑️ ${pS}</span><span class="bg-purple-50 border border-purple-100 text-purple-600 px-1.5 py-0.5 rounded">🏥 ${mS}</span>${isS ? '<span class="text-white bg-red-500 px-1.5 py-0.5 rounded shadow-sm">!缺</span>' : ''}</div></div></td><td class="p-2 w-20 align-middle"><input type="text" readonly onclick="openKeypad(${r.ts})" value="${r.qty}" class="w-full text-center font-black bg-white border-2 border-slate-200 rounded-xl py-2 text-[14px] cursor-pointer shadow-sm ${isS ? 'text-red-600 border-red-300 bg-red-50' : 'text-blue-700'}"></td><td class="p-2 text-center w-12"><div class="flex flex-col items-center gap-3">${t === 'pending' ? `<button onclick="move(${r.ts})" class="text-emerald-500 hover:text-emerald-600 active:scale-90 transition-transform"><i class="icon-check w-6 h-6"></i></button>` : ''}<button onclick="delEntry(${r.ts})" class="text-slate-300 hover:text-red-400 active:scale-90 transition-transform"><i class="icon-trash w-5 h-5"></i></button></div></td></tr>`;
                     }).join('');
                     
